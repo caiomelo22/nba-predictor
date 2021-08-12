@@ -17,7 +17,7 @@ import pandas as pd
 
 """## Importing the dataset"""
 
-dataset = pd.read_csv('Score_2008-18.csv')
+dataset = pd.read_csv('../../data/seasons/score/2008-18.csv')
 X = dataset.iloc[:, 1:-2].values
 y = dataset.iloc[:, -2:].values
 print(type(X), X, len(X))
