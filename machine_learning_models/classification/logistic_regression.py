@@ -20,7 +20,7 @@ skl.__version__
 
 """## Importing the dataset"""
 
-dataset = pd.read_csv('../../data/seasons/winner/2016-2016.csv')
+dataset = pd.read_csv('../../data/teams/winner/BOS-2008-2018.csv')
 X = dataset.iloc[:, 4:-1].values
 y = dataset.iloc[:, -1].values
 # print(X)
