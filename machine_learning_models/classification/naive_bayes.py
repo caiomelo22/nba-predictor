@@ -9,6 +9,7 @@ Original file is located at
 
 import numpy as np
 import matplotlib.pyplot as plt
+from statistics import mean
 import pandas as pd
 
 " Importing the dataset "
@@ -49,7 +50,8 @@ y_pred = classifier.predict(X_test)
 from sklearn.model_selection import cross_val_score
 
 print("Predictions for the test set with the cross validation score")
-print(cross_val_score(classifier, X_test, y_test))
+crossValScores = cross_val_score(classifier, X_test, y_test)
+print(mean(crossValScores), crossValScores)
 
 " Making the Confusion Matrix "
 

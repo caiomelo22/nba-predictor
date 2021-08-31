@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn as skl
+from statistics import mean
 
 " Importing the dataset "
 
@@ -50,7 +51,8 @@ y_pred = classifier.predict(X_test)
 from sklearn.model_selection import cross_val_score
 
 print("Predictions for the test set with the cross validation score")
-print(cross_val_score(classifier, X_test, y_test))
+crossValScores = cross_val_score(classifier, X_test, y_test)
+print(mean(crossValScores), crossValScores)
 
 " Making the Confusion Matrix "
 

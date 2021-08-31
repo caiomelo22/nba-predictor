@@ -113,13 +113,6 @@ print(accuracy_score(y_less_risk_test, y_less_risk_pred))
 
 y_pred = (y_pred > 0.5)
 
-" Cross Validation Score "
-
-from sklearn.model_selection import cross_val_score
-
-print("Predictions for the test set with the cross validation score")
-print(cross_val_score(lstm, X_validation, y_validation))
-
 " Predicting results for all data"
 
 from sklearn.metrics import confusion_matrix, accuracy_score

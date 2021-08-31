@@ -57,61 +57,17 @@ lstm.summary()
 
 history = lstm.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
 
-" Overfit check "
-
-# fig, axs = plt.subplots(2)
-
-# # create accuracy sublpot
-# axs[0].plot(history.history["accuracy"], label="train accuracy")
-# axs[0].plot(history.history["val_accuracy"], label="test accuracy")
-# axs[0].set_ylabel("Accuracy")
-# axs[0].legend(loc="lower right")
-# axs[0].set_title("Accuracy eval")
-
-# # create error sublpot
-# axs[1].plot(history.history["loss"], label="train error")
-# axs[1].plot(history.history["val_loss"], label="test error")
-# axs[1].set_ylabel("Error")
-# axs[1].set_xlabel("Epoch")
-# axs[1].legend(loc="upper right")
-# axs[1].set_title("Error eval")
-
-# plt.show()
-
 " Predicting single result "
 
 # print(lstm.predict(sc.transform([[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]])) > 0.5)
 
-" Predicting results with a margin of certainty"
+" Predicting results for all data"
 
 y_pred = lstm.predict(X_validation)
 
-# rows = y_pred.shape[0]
-# cols = y_pred.shape[1]
+" Evaluating the Model Performance "
 
-# y_less_risk_test = []
-# y_less_risk_pred = []
-
-# for y in range(0, rows -1):
-#   if y_pred[y][0] <= 0.4 or y_pred[y][0] >= 0.6:
-#     y_less_risk_test.append(y_validation[y])
-#     y_less_risk_pred.append(y_pred[y] > 0.5)
-
-# y_less_risk_test = np.array(y_less_risk_test)
-# y_less_risk_pred = np.array(y_less_risk_pred)
-
-# from sklearn.metrics import confusion_matrix, accuracy_score
-# cm = confusion_matrix(y_less_risk_test, y_less_risk_pred)
-# print('Predictions with a margin of certainty for the validation set')
-# print(cm)
-# print(accuracy_score(y_less_risk_test, y_less_risk_pred))
-
-# y_pred = (y_pred > 0.5)
-
-" Predicting results for all data"
-
-from sklearn.metrics import confusion_matrix, accuracy_score
-cm = confusion_matrix(y_validation, y_pred)
-print('\nPredictions for the entire validation set')
-print(cm)
-print(accuracy_score(y_validation, y_pred))
+from sklearn.metrics import r2_score, mean_squared_error
+print("Model R2 Score and error")
+print(r2_score(y_validation, y_pred))
+print(mean_squared_error(y_validation, y_pred))
