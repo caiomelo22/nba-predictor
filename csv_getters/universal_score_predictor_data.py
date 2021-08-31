@@ -84,8 +84,8 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2018
-    last_season = 2019
+    first_season = 2000
+    last_season = 2021
     
     print("Getting NBA Seasons Information...")
     for i in range(first_season,last_season):

@@ -13,7 +13,7 @@ import pandas as pd
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2008-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/2000-2020.csv')
 X = dataset.iloc[:, 4:-1]
 y = dataset.iloc[:, -1]
 

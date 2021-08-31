@@ -44,6 +44,13 @@ classifier.fit(X_train, y_train)
 y_pred = classifier.predict(X_test)
 # print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
 
+" Cross Validation Score "
+
+from sklearn.model_selection import cross_val_score
+
+print("Predictions for the test set with the cross validation score")
+print(cross_val_score(classifier, X_test, y_test))
+
 " Making the Confusion Matrix "
 
 from sklearn.metrics import confusion_matrix, accuracy_score

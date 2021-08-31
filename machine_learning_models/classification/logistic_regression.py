@@ -14,7 +14,7 @@ import sklearn as skl
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/teams/winner/BOS-2008-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/2000-2020.csv')
 X = dataset.iloc[:, 4:-1].values
 y = dataset.iloc[:, -1].values
 
@@ -44,6 +44,13 @@ classifier.fit(X_train, y_train)
 
 y_pred = classifier.predict(X_test)
 # print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
+
+" Cross Validation Score "
+
+from sklearn.model_selection import cross_val_score
+
+print("Predictions for the test set with the cross validation score")
+print(cross_val_score(classifier, X_test, y_test))
 
 " Making the Confusion Matrix "
 

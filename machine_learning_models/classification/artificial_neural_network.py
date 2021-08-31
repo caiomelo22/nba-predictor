@@ -15,7 +15,7 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2008-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/2016-2018.csv')
 dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
 X = dataset.iloc[:, 4:-1].values
 y = dataset.iloc[:, -1].values
@@ -107,6 +107,13 @@ print(cm)
 print(accuracy_score(y_less_risk_test, y_less_risk_pred))
 
 y_pred = (y_pred > 0.5)
+
+" Cross Validation Score "
+
+from sklearn.model_selection import cross_val_score
+
+print("Predictions for the test set with the cross validation score")
+print(cross_val_score(ann, X_validation, y_validation))
 
 " Predicting results for all data"
 
