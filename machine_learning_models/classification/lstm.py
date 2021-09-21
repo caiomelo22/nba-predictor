@@ -15,38 +15,67 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2008-2018.csv')
-dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
-X = dataset.iloc[:, 4:-1].values
+dataset = pd.read_csv('../../data/seasons/winner/LSTM/2018-2018.csv')
+dataset['DATE'] = pd.to_datetime(dataset['DATE'])
+X = dataset.iloc[:, 2:-1].values
 y = dataset.iloc[:, -1].values
 print(dataset.iloc[:, 4:-1].columns, len(dataset.iloc[:, 4:-1].columns))
 print(len(X))
 # print(dataset['WINNER'])
 
-" Splitting the dataset into the Training set and Test set "
-
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
-
 " Feature Scaling "
 
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
-X_validation = sc.transform(X_validation)
+X[:,2:] = sc.fit_transform(X[:,2:])
+# X_test = sc.transform(X_test)
+# X_validation = sc.transform(X_validation)
+
+" Splitting the dataset into the Training set and Test set "
+
+features = []
+labels = []
+for i in range(2, len(X)):
+    team_a_id = X[i-2,0]
+    team_b_id = X[i-1,0]
+    print('i', i)
+    print('Date', X[i-2,1])
+    # team_previous_games = X[X[:i,0] == team_id]
+    team_a_previous_games = X[(X[:,0] == team_a_id) & (X[:,1] < X[i-1,1]),:]
+    team_b_previous_games = X[(X[:,0] == team_b_id) & (X[:,1] < X[i-1,1]),:]
+    if len(team_a_previous_games) >= 5 and len(team_b_previous_games) >= 5:
+        game = np.concatenate((team_a_previous_games[-5:, 2:], team_b_previous_games[-5:, 2:]), axis = 1)
+        features.append(game)
+        labels.append(y[i-2])
+    
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
+X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
+    
+X_train = np.array(X_train).astype(np.float32)
+X_test = np.array(X_test).astype(np.float32)
+X_validation = np.array(X_validation).astype(np.float32)
+
+y_train = np.array(y_train).astype(np.float32)
+y_test = np.array(y_test).astype(np.float32)
+y_validation = np.array(y_validation).astype(np.float32)
 
 " Building the LSTM "
 
-X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
-X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
-X_validation = np.reshape(X_validation, (X_validation.shape[0], 1, X_validation.shape[1]))
-
-input_shape = (len(X_train), len(dataset.iloc[:, 4:-1].columns)) 
-
 lstm = keras.Sequential()
-lstm.add(keras.layers.LSTM(68, input_shape=input_shape, return_sequences=False))
+# lstm.add(keras.layers.LSTM(68, input_shape=input_shape, return_sequences=False))
+lstm.add(keras.layers.LSTM(50, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences=True))
+lstm.add(keras.layers.Dropout(0.2))
+
+lstm.add(keras.layers.LSTM(units=50, return_sequences=True))
+lstm.add(keras.layers.Dropout(0.2))
+
+lstm.add(keras.layers.LSTM(units=50, return_sequences=True))
+lstm.add(keras.layers.Dropout(0.2))
+
+lstm.add(keras.layers.LSTM(units=50))
+lstm.add(keras.layers.Dropout(0.2))
 
 # Output layer
 lstm.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
