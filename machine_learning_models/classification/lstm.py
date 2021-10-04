@@ -15,24 +15,23 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/LSTM/2013-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/LSTM/2000-2018.csv')
 dataset['DATE'] = pd.to_datetime(dataset['DATE'])
 X = dataset.iloc[:, 1:-1].values
 y = dataset.iloc[:, -1].values
+timesteps = 10
 print(dataset.iloc[:, 4:-1].columns, len(dataset.iloc[:, 4:-1].columns))
 print(len(X))
-# print(dataset['WINNER'])
 
 " Feature Scaling "
 
 from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
 X[:,3:] = sc.fit_transform(X[:,3:])
-# X_test = sc.transform(X_test)
-# X_validation = sc.transform(X_validation)
 
 " Splitting the dataset into the Training set and Test set "
 
+tracking = []
 features = []
 labels = []
 for i in range(2, len(X), 2):
@@ -43,8 +42,10 @@ for i in range(2, len(X), 2):
     print('{}: {} x {}. Team A won? {}'.format(i, team_a_abbv, team_b_abbv, y[i-2]))
     team_a_previous_games = X[(X[:,1] == team_a_id) & (X[:,2] < X[i-1,2]),:]
     team_b_previous_games = X[(X[:,1] == team_b_id) & (X[:,2] < X[i-1,2]),:]
-    if len(team_a_previous_games) >= 5 and len(team_b_previous_games) >= 5:
-        game = np.concatenate((team_a_previous_games[-5:, 3:], team_b_previous_games[-5:, 3:]), axis = 1)
+    if len(team_a_previous_games) >= timesteps and len(team_b_previous_games) >= timesteps:
+        game_tracking = np.concatenate((team_a_previous_games[-1*timesteps:, 1:], team_b_previous_games[-1*timesteps:, 1:]), axis = 1)
+        game = np.concatenate((team_a_previous_games[-1*timesteps:, 3:], team_b_previous_games[-1*timesteps:, 3:]), axis = 1)
+        tracking.append(game_tracking)
         features.append(game)
         labels.append(y[i-2])
     
@@ -64,16 +65,7 @@ y_validation = np.array(y_validation).astype(np.float32)
 " Building the LSTM "
 
 lstm = keras.Sequential()
-lstm.add(keras.layers.LSTM(50, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences=True))
-lstm.add(keras.layers.Dropout(0.2))
-
-lstm.add(keras.layers.LSTM(units=50, return_sequences=True))
-lstm.add(keras.layers.Dropout(0.2))
-
-lstm.add(keras.layers.LSTM(units=50, return_sequences=True))
-lstm.add(keras.layers.Dropout(0.2))
-
-lstm.add(keras.layers.LSTM(units=50))
+lstm.add(keras.layers.LSTM(1, input_shape=(X_train.shape[1], X_train.shape[2])))
 lstm.add(keras.layers.Dropout(0.2))
 
 # Output layer

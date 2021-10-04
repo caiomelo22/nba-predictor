@@ -15,9 +15,9 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2000-2020.csv')
+dataset = pd.read_csv('../../data/seasons/winner/2018-2018.csv')
 dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
-X = dataset.iloc[:, 4:-1].values
+X = dataset.iloc[:, 5:-1].values
 y = dataset.iloc[:, -1].values
 
 " Splitting the dataset into the Training set and Test set "
