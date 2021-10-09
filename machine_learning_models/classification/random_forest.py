@@ -14,8 +14,8 @@ from statistics import mean
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2000-2020.csv')
-X = dataset.iloc[:, 4:-1]
+dataset = pd.read_csv('../../data/seasons/winner/2010-2018.csv')
+X = dataset.iloc[:, 5:-1]
 y = dataset.iloc[:, -1]
 
 " Splitting the dataset into the Training set and Test set "
