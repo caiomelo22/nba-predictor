@@ -8,105 +8,10 @@ Created on Mon Mar  8 12:03:16 2021
 import pandas as pd
 import numpy as np
 from functools import reduce
-from nba_api.stats.endpoints import teamplayerdashboard, leaguestandings, teamplayerdashboard, leagueleaders, teamestimatedmetrics, teamgamelog, teamgamelogs, leaguegamelog
+from nba_api.stats.endpoints import leaguegamelog
 from nba_api.stats.static import teams 
+import helper_functions as hf
 from odds import get_betting_odds
-from datetime import datetime, timedelta
-from statistics import mean
-
-def get_k(vic_margin, elo_diff_winner):
-    return 20*((vic_margin+3)**0.8)/(7.5 + 0.006*elo_diff_winner)
-
-def get_e_team(team_elo, opp_team_elo):
-    return 1/(1+10**((opp_team_elo - team_elo)/400))
-
-def reset_season_elo(season_id, g, elo_dic):
-    for k, v in elo_dic.items():
-        elo_dic[k] = v*0.75 + 0.25*1505
-                
-def update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts):
-    if winner == 'A':
-        vic_margin = team_a_pts - team_b_pts
-        elo_diff_winner = elo_a - elo_b
-        elo_dic[team_a_id] = get_k(vic_margin, elo_diff_winner)*(1 - get_e_team(elo_a, elo_b)) + elo_a
-        elo_dic[team_b_id] = get_k(vic_margin, elo_diff_winner)*(0 - get_e_team(elo_b, elo_a)) + elo_b
-    else:
-        vic_margin = team_b_pts - team_a_pts
-        elo_diff_winner = elo_b - elo_a
-        elo_dic[team_a_id] = get_k(vic_margin, elo_diff_winner)*(0 - get_e_team(elo_a, elo_b)) + elo_a
-        elo_dic[team_b_id] = get_k(vic_margin, elo_diff_winner)*(1 - get_e_team(elo_b, elo_a)) + elo_b
-        
-def team_points_conceded(previous_games, season_games):
-    previous_games_pts_conceded = []
-    for index, game in previous_games.iterrows():
-        opp_game = season_games.loc[(season_games['GAME_ID'] == game['GAME_ID']) & (season_games['TEAM_ID'] != game['TEAM_ID'])].iloc[0]
-        previous_games_pts_conceded.append(opp_game['PTS'])
-    if len(previous_games_pts_conceded) > 0:
-        return sum(previous_games_pts_conceded) / len(previous_games_pts_conceded)
-    return 0
-
-def current_streak (previous_games):
-    if len(previous_games.index) > 0:
-        previous_games['start_of_streak'] = previous_games.WL.ne(previous_games['WL'].shift())
-        previous_games['streak_id'] = previous_games['start_of_streak'].cumsum()
-        previous_games['streak_counter'] = previous_games.groupby('streak_id').cumcount() + 1
-        if previous_games.iloc[-1,7] == 'W':
-            return previous_games.iloc[-1,-1]
-        else:
-            return -1*previous_games.iloc[-1,-1]
-    else:
-        return 0
-    
-def get_player_mean_per(playerLastGames):
-    perValues = []
-    for index, game in playerLastGames.iterrows():
-        perValues.append((game['FGM'] * 85.910 + game['STL'] * 53.897 + game['FG3M'] * 51.757 + game['FTM'] * 46.845 + game['BLK'] * 39.190 + game['OREB'] * 39.190 + game['AST'] * 34.677 + game['DREB'] * 14.707
-                          - game['PF'] * 17.174 - (game['FTA'] - game['FTM']) * 20.091 - (game['FGA'] - game['FGM'])* 39.190 - game['TOV'] * 53.897 ) * (1 / game['MIN']))
-    if len(perValues) > 0:
-        return mean(perValues)
-    return 0
-    
-def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
-    gamePlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_ID'] == gameId) & (seasonAllPlayers['TEAM_ID'] == teamId) & (seasonAllPlayers['MIN'] >= 22)]
-    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (seasonAllPlayers['SEASON_ID'] == seasonId) & (seasonAllPlayers['MIN'] > 0)]
-    perValues = []
-    for index, player in gamePlayers.iterrows():
-        playerLastTenGames = seasonPlayers.loc[seasonPlayers['PLAYER_ID'] == player['PLAYER_ID']].iloc[-10:]
-        perValues.append(get_player_mean_per(playerLastTenGames))
-    if len(perValues) > 0:
-        return mean(perValues)
-    else:
-        return 0
-    
-def get_teams_odds(team_a_id, team_b_id, game_date, season_odds):
-    try:
-        game = next(filter(lambda x: game_date.date() <= x['date'].date() and (game_date.date() + timedelta(days=2)) >= x['date'].date() and x['team_a_id'] == team_a_id and x['team_b_id'] == team_b_id, season_odds))
-        return float(game['odds_team_a']), float(game['odds_team_b'])
-    except StopIteration:
-        return None, None
-    except ValueError:
-        return None, None
-    
-
-def get_wl_pct (previous_games):
-    if len(previous_games.index) > 0:
-        wl = previous_games['WL'].value_counts(normalize=True)
-        if 'W' in wl and 'L' in wl:
-            win_pct = wl['W']
-            loss_pct = wl['L']
-        elif 'W' not in wl and 'L' in wl:
-            win_pct = 0
-            loss_pct = wl['L']
-        elif 'W' in wl and 'L' not in wl:
-            win_pct = wl['W']
-            loss_pct = 0
-        return win_pct, loss_pct
-    return 0, 0
-    
-def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, ha_percentage, elo, streak, matchups_pct, per, odds):
-    return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
-                        previous_games['FT_PCT'].mean(), previous_games['REB'].mean(), previous_games['TOV'].mean(),
-                        previous_games['BLK'].mean(), season_pct, ha_percentage, elo, streak, matchups_pct, per, odds]
 
 if __name__ == "__main__":
     pd.options.mode.chained_assignment = None  # default='warn'
@@ -120,8 +25,8 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2018
-    last_season = 2019
+    first_season = 2019
+    last_season = 2020
     
     print("Getting NBA Seasons Information...")
     for i in range(first_season,last_season):
@@ -156,10 +61,11 @@ if __name__ == "__main__":
     
     matches_organized = []
     matches_organized_lstm = []
+    matches_organized_regression = []
     
     season_id = ''    
     current_season = first_season
-    print('Getting odds for season {}...'.format(current_season, current_season + 1))
+    print('Getting odds for season {}-{}...'.format(current_season, current_season + 1))
     season_odds = get_betting_odds('{}-{}'.format(current_season, current_season + 1))
     right_matchup_baseline = 0
     right_odds_baseline = 0
@@ -172,7 +78,7 @@ if __name__ == "__main__":
         
         if season_id != '' and season_id != g.iloc[[0],:].iloc[0]['SEASON_ID']:
             current_season += 1
-            reset_season_elo(season_id, g, elo_dic)
+            hf.reset_season_elo(season_id, g, elo_dic)
             print('Getting odds for season {}-{}...'.format(current_season, current_season + 1))
             season_odds = get_betting_odds('{}-{}'.format(current_season, current_season + 1))
         
@@ -194,9 +100,9 @@ if __name__ == "__main__":
             winner = 'A'
             
         if '@' in g.iloc[[0],:].iloc[0]['MATCHUP']:
-            team_b_odds, team_a_odds = get_teams_odds(team_b_id, team_a_id, game_date, season_odds)
+            team_b_odds, team_a_odds = hf.get_teams_odds(team_b_id, team_a_id, game_date, season_odds)
         else:
-            team_a_odds, team_b_odds = get_teams_odds(team_a_id, team_b_id, game_date, season_odds)
+            team_a_odds, team_b_odds = hf.get_teams_odds(team_a_id, team_b_id, game_date, season_odds)
         
         team_a_previous_games = season_games.loc[(season_games['TEAM_ID'] == team_a_id) & (season_games['GAME_DATE'] < game_date)]
         team_b_previous_games = season_games.loc[(season_games['TEAM_ID'] == team_b_id) & (season_games['GAME_DATE'] < game_date)]
@@ -232,25 +138,25 @@ if __name__ == "__main__":
         
         if not (len(team_a_previous_10_games.index) >= 5 and len(team_b_previous_10_games.index) >= 5 and len(team_a_last_ha_games.index) >= 2 and len(team_b_last_ha_games.index) >= 2 and len(last_matchups.index) > 0 and team_a_odds != None and team_b_odds != None):
             print("Sem jogos suficientes. Jogos A: {} // Jogos HA A: {} // Jogos B: {} // Jogos HA B: {}".format(len(team_a_previous_10_games.index), len(team_b_previous_10_games.index), len(team_a_last_ha_games.index), len(team_b_last_ha_games.index)))
-            update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
+            hf.update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
             continue
         
         # Getting player information
         # team_a_per, teams_per[team_a_id] = get_team_per_mean(team_a_id, game_id, game_date, season_id, season_games_plyrs, teams_per[team_a_id])
         # team_b_per, teams_per[team_b_id] = get_team_per_mean(team_b_id, game_id, game_date, season_id, season_games_plyrs, teams_per[team_b_id])
-        teams_per[team_a_id] = get_team_per_mean(team_a_id, game_id, game_date, season_id, season_games_plyrs)
-        teams_per[team_b_id] = get_team_per_mean(team_b_id, game_id, game_date, season_id, season_games_plyrs)
+        teams_per[team_a_id] = hf.get_team_per_mean(team_a_id, game_id, game_date, season_id, season_games_plyrs)
+        teams_per[team_b_id] = hf.get_team_per_mean(team_b_id, game_id, game_date, season_id, season_games_plyrs)
         
         # Season Win Percentage
-        team_a_season_pct = get_wl_pct(team_a_season_games)[0]
-        team_b_season_pct = get_wl_pct(team_b_season_games)[0]
+        team_a_season_pct = hf.get_wl_pct(team_a_season_games)[0]
+        team_b_season_pct = hf.get_wl_pct(team_b_season_games)[0]
         
         # Calculating Current Streak
-        team_a_streak = current_streak(team_a_season_games)
-        team_b_streak = current_streak(team_b_season_games)
+        team_a_streak = hf.current_streak(team_a_season_games)
+        team_b_streak = hf.current_streak(team_b_season_games)
     
         # Updating the matchup baseline
-        team_a_last_matchups_percentage, team_b_last_matchups_percentage = get_wl_pct(last_matchups)
+        team_a_last_matchups_percentage, team_b_last_matchups_percentage = hf.get_wl_pct(last_matchups)
         if (team_a_last_matchups_percentage >= team_b_last_matchups_percentage and winner == 'A') or (team_b_last_matchups_percentage > team_a_last_matchups_percentage and winner == 'B'):
             right_matchup_baseline+=1
         
@@ -258,16 +164,20 @@ if __name__ == "__main__":
         if (team_a_odds <= team_b_odds and winner == 'A') or (team_b_odds < team_a_odds and winner == 'B'):
             right_odds_baseline+=1
             
-        team_a_ha_percentage = get_wl_pct(team_a_last_ha_games)[0]
-        team_b_ha_percentage = get_wl_pct(team_b_last_ha_games)[0]
+        team_a_ha_percentage = hf.get_wl_pct(team_a_last_ha_games)[0]
+        team_b_ha_percentage = hf.get_wl_pct(team_b_last_ha_games)[0]
         
         # Poins Conceded
-        team_a_previous_games_pts_conceded = team_points_conceded(team_a_previous_10_games, season_games)
-        team_b_previous_games_pts_conceded = team_points_conceded(team_b_previous_10_games, season_games)
+        team_a_previous_games_pts_conceded = hf.team_points_conceded(team_a_previous_10_games, season_games)
+        team_b_previous_games_pts_conceded = hf.team_points_conceded(team_b_previous_10_games, season_games)
+        
+        # HA Points Conceded
+        team_a_ha_previous_games_pts_conceded = hf.team_points_conceded(team_a_last_ha_games, season_games)
+        team_b_ha_previous_games_pts_conceded = hf.team_points_conceded(team_b_last_ha_games, season_games)
             
         # Defining list of stats for each team
-        stats_team_a = get_team_stats (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_pct, team_a_ha_percentage, elo_a, team_a_streak, team_a_last_matchups_percentage, teams_per[team_a_id], team_a_odds)
-        stats_team_b = get_team_stats (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_pct, team_b_ha_percentage, elo_b, team_b_streak, team_b_last_matchups_percentage, teams_per[team_b_id], team_b_odds)
+        stats_team_a = hf.get_team_stats (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_pct, team_a_ha_percentage, elo_a, team_a_streak, team_a_last_matchups_percentage, teams_per[team_a_id], team_a_odds)
+        stats_team_b = hf.get_team_stats (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_pct, team_b_ha_percentage, elo_b, team_b_streak, team_b_last_matchups_percentage, teams_per[team_b_id], team_b_odds)
             
         matches_organized.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a + stats_team_b + [winner])
         
@@ -282,7 +192,12 @@ if __name__ == "__main__":
                         g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
                          teams_per[team_b_id], abs(winner_bin-1)])
         
-        update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
+        stats_team_a_regression = hf.get_team_stats_regression (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_games, elo_a, teams_per[team_a_id], team_a_last_ha_games, team_a_ha_previous_games_pts_conceded)
+        stats_team_b_regression = hf.get_team_stats_regression (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_games, elo_b, teams_per[team_b_id], team_b_last_ha_games, team_b_ha_previous_games_pts_conceded)
+            
+        matches_organized_regression.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a_regression + stats_team_b_regression + [team_a_pts, team_b_pts])
+        
+        hf.update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
     
     print("Baseline Last Matchups: {}/{} -> {}".format(right_matchup_baseline,len(matches_organized),100*right_matchup_baseline/len(matches_organized)))
     print("Baseline Odds: {}/{} -> {}".format(right_odds_baseline,len(matches_organized),100*right_odds_baseline/len(matches_organized)))
@@ -294,5 +209,10 @@ if __name__ == "__main__":
                                                         'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 
                                                         'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'ELO_OPP', 'STREAK_A', 'PER_A',
                                                         'WINNER'])
+    final_df_regression = pd.DataFrame(matches_organized_regression, columns=['SEASON_ID', 'GAME_DATE', 'TEAM_A', 'TEAM_B',
+                                                        'PTS_A', 'PTS_CON_A', 'FT_PCT_A', 'FG_PCT_A', 'FG3_PCT_A', 'ELO_A', 'PER_A', 'HA_PTS_A', 'HA_PTS_CON_A', 'SEASON_PTS_A',
+                                                        'PTS_B', 'PTS_CON_B', 'FT_PCT_B', 'FG_PCT_B', 'FG3_PCT_B', 'ELO_B', 'PER_B', 'HA_PTS_B', 'HA_PTS_CON_B', 'SEASON_PTS_B',
+                                                        'SCORE_A', 'SCORE_B'])
+    final_df_regression.to_csv('../data/seasons/score/{}-{}.csv'.format(first_season, last_season-1))
     final_df.to_csv('../data/seasons/winner/{}-{}.csv'.format(first_season, last_season-1))
     final_df_lstm.to_csv('../data/seasons/winner/LSTM/{}-{}.csv'.format(first_season, last_season-1))

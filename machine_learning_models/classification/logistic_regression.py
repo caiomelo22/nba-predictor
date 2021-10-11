@@ -7,35 +7,18 @@ Original file is located at
     https://colab.research.google.com/drive/1YsNovkm6KC1g09s1mBhjT0y91SD_RbFH
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import sklearn as skl
 from statistics import mean
+import data_import_helper as dih
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2018-2018.csv')
-X = dataset.iloc[:, 5:-1].values
-y = dataset.iloc[:, -1].values
-
-" Splitting the dataset into the Training set and Test set "
-
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25, random_state = 0)
-
-" Feature Scaling "
-
-from sklearn.preprocessing import StandardScaler
-sc = StandardScaler()
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
+dataset, X, y, X_train, X_test, y_train, y_test = dih.import_data()
 
 " Training the Logistic Regression model on the Training set "
 
 from sklearn.linear_model import LogisticRegression
 classifier = LogisticRegression(random_state = 0)
-classifier.fit(X_train, y_train)
+classifier.fit(X_train, y_train.ravel())
 
 " Predicting a new result "
 
@@ -51,13 +34,13 @@ y_pred = classifier.predict(X_test)
 from sklearn.model_selection import cross_val_score
 
 print("Predictions for the test set with the cross validation score")
-crossValScores = cross_val_score(classifier, X_test, y_test)
+crossValScores = cross_val_score(classifier, X_test, y_test.ravel())
 print(mean(crossValScores), crossValScores)
 
 " Making the Confusion Matrix "
 
 from sklearn.metrics import confusion_matrix, accuracy_score
 print("Predictions for the test set")
-cm = confusion_matrix(y_test, y_pred)
+cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
 print(cm)
-print(accuracy_score(y_test, y_pred))
+print(accuracy_score(y_test.ravel(), y_pred.ravel()))

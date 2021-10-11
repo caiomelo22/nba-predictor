@@ -10,17 +10,11 @@ Original file is located at
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import data_import_helper as dih
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/score/2010-2018.csv')
-X = dataset.iloc[:, 4:-2].values
-y = dataset.iloc[:, -2:].values
-
-" Splitting the dataset into the Training set and Test set "
-
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 0)
+dataset, X, y, X_train, X_test, y_train, y_test = dih.import_data()
 
 " Training the model on the Training set "
 
@@ -36,7 +30,7 @@ np.set_printoptions(precision=2)
 
 " Predicting a single game "
 
-# print(regressor.predict(regressor.transform([[115.0, 114.3, 0.45280000000000004, 0.3868, 0.8552, 42.0, 11.1, 6.1, 0.6, 1525.012443981673, 117.5, 114.1, 0.48050000000000004, 0.4142, 0.7729000000000001, 48.2, 16.5, 4.4, 0.7, 1611.0511901230773]])))
+# print(regressor.predict([[115.0, 114.3, 0.45280000000000004, 0.3868, 0.8552, 42.0, 11.1, 6.1, 0.6, 1525.012443981673, 117.5, 114.1, 0.48050000000000004, 0.4142, 0.7729000000000001, 48.2, 16.5, 4.4, 0.7, 1611.0511901230773]]))
 
 " Evaluating the Model Performance "
 
