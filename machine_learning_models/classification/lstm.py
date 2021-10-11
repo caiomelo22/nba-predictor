@@ -15,7 +15,7 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/LSTM/2000-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/LSTM/2010-2018.csv')
 dataset['DATE'] = pd.to_datetime(dataset['DATE'])
 X = dataset.iloc[:, 1:-1].values
 y = dataset.iloc[:, -1].values
