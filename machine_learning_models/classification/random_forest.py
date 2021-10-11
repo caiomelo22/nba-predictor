@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from statistics import mean
+from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.model_selection import cross_val_score
 
 " Importing the dataset "
 
@@ -35,10 +37,13 @@ X_test = sc.transform(X_test)
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV
-classifier = RandomForestClassifier(n_estimators = 500, criterion = 'entropy', random_state = 0)
+
+# Prameters achieved by running the Random Search CV Optmizer code below
+classifier = RandomForestClassifier(n_estimators = 1000, min_samples_leaf=2, min_samples_split=5, max_features='sqrt', 
+                                    max_depth=10, bootstrap = True, criterion = 'entropy', random_state = 0)
 classifier.fit(X_train, y_train)
 
-" Random Search CV Optmizer "
+# " Random Search CV Optmizer "
 # # Number of trees in random forest
 # n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
 # # Number of features to consider at every split
@@ -54,17 +59,19 @@ classifier.fit(X_train, y_train)
 # bootstrap = [True, False]
 # # Create the random grid
 # random_grid = {'n_estimators': n_estimators,
-#                'max_features': max_features,
-#                'max_depth': max_depth,
-#                'min_samples_split': min_samples_split,
-#                'min_samples_leaf': min_samples_leaf,
-#                'bootstrap': bootstrap}
+#                 'max_features': max_features,
+#                 'max_depth': max_depth,
+#                 'min_samples_split': min_samples_split,
+#                 'min_samples_leaf': min_samples_leaf,
+#                 'bootstrap': bootstrap}
                
 # rf_random = RandomizedSearchCV(estimator = classifier, param_distributions = random_grid, n_iter = 100, cv = 3, verbose=2, random_state=42, n_jobs = -1)
 
 # rf_random.fit(X_train, y_train)
 
 # best_random = rf_random.best_estimator_
+# best_parameters = rf_random.cv_results_
+# print(best_parameters)
 # print(best_random)
 # predictions = best_random.predict(X_test)
 # cm = confusion_matrix(y_test, predictions)
@@ -121,15 +128,12 @@ y_pred = classifier.predict(X_test)
 
 " Cross Validation Score "
 
-from sklearn.model_selection import cross_val_score
-
 print("Predictions for the test set with the cross validation score")
 crossValScores = cross_val_score(classifier, X_test, y_test)
 print(mean(crossValScores), crossValScores)
 
 " Making the Confusion Matrix "
 
-from sklearn.metrics import confusion_matrix, accuracy_score
 print("Predictions for the test set")
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
