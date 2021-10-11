@@ -15,7 +15,7 @@ from statistics import mean
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/2010-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/2018-2018.csv')
 X = dataset.iloc[:, 5:-1].values
 y = dataset.iloc[:, -1].values
 

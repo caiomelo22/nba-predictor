@@ -79,7 +79,6 @@ def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
         return 0
     
 def get_teams_odds(team_a_id, team_b_id, game_date, season_odds):
-    print('Finding odds for {} x {} on {}...'.format(team_a_id, team_b_id, game_date))
     try:
         game = next(filter(lambda x: game_date.date() <= x['date'].date() and (game_date.date() + timedelta(days=2)) >= x['date'].date() and x['team_a_id'] == team_a_id and x['team_b_id'] == team_b_id, season_odds))
         return float(game['odds_team_a']), float(game['odds_team_b'])
@@ -121,7 +120,7 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2010
+    first_season = 2018
     last_season = 2019
     
     print("Getting NBA Seasons Information...")
@@ -156,13 +155,14 @@ if __name__ == "__main__":
         elo_dic[team['id']] = 1500
     
     matches_organized = []
+    matches_organized_lstm = []
     
     season_id = ''    
     current_season = first_season
     print('Getting odds for season {}...'.format(current_season, current_season + 1))
     season_odds = get_betting_odds('{}-{}'.format(current_season, current_season + 1))
-    total = 0
-    right = 0
+    right_matchup_baseline = 0
+    right_odds_baseline = 0
     
     print("Creating CSV file of all games...")
     for i, g in season_games.groupby(season_games.index // 2):
@@ -187,8 +187,10 @@ if __name__ == "__main__":
         team_b_abbv = g.iloc[1:2,:].iloc[0]['TEAM_ABBREVIATION']
         
         winner = 'B'
+        winner_bin = 0
         
         if g.iloc[[0],:].iloc[0]['WL'] == 'W':
+            winner_bin = 1
             winner = 'A'
             
         if '@' in g.iloc[[0],:].iloc[0]['MATCHUP']:
@@ -247,10 +249,14 @@ if __name__ == "__main__":
         team_a_streak = current_streak(team_a_season_games)
         team_b_streak = current_streak(team_b_season_games)
     
+        # Updating the matchup baseline
         team_a_last_matchups_percentage, team_b_last_matchups_percentage = get_wl_pct(last_matchups)
         if (team_a_last_matchups_percentage >= team_b_last_matchups_percentage and winner == 'A') or (team_b_last_matchups_percentage > team_a_last_matchups_percentage and winner == 'B'):
-            right+=1
-        total += 1
+            right_matchup_baseline+=1
+        
+        # Updating the odds baseline
+        if (team_a_odds <= team_b_odds and winner == 'A') or (team_b_odds < team_a_odds and winner == 'B'):
+            right_odds_baseline+=1
             
         team_a_ha_percentage = get_wl_pct(team_a_last_ha_games)[0]
         team_b_ha_percentage = get_wl_pct(team_b_last_ha_games)[0]
@@ -265,11 +271,28 @@ if __name__ == "__main__":
             
         matches_organized.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a + stats_team_b + [winner])
         
+        
+        matches_organized_lstm.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
+                        g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
+                        g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
+                         teams_per[team_a_id], winner_bin])
+        
+        matches_organized_lstm.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
+                        g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
+                        g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
+                         teams_per[team_b_id], abs(winner_bin-1)])
+        
         update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
     
-    print("Baseline Last Matchups: {}/{} -> {}".format(right,total,100*right/total))
+    print("Baseline Last Matchups: {}/{} -> {}".format(right_matchup_baseline,len(matches_organized),100*right_matchup_baseline/len(matches_organized)))
+    print("Baseline Odds: {}/{} -> {}".format(right_odds_baseline,len(matches_organized),100*right_odds_baseline/len(matches_organized)))
     final_df = pd.DataFrame(matches_organized, columns=['SEASON_ID', 'GAME_DATE', 'TEAM_A', 'TEAM_B',
                                                         'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'STREAK_A', 'MATCHUP_A', 'PER_A', 'ODDS_A',
                                                         'PTS_B', 'PTS_CON_B', 'FG_PCT_B', 'FG3_PCT_B', 'FT_PCT_B', 'REB_B', 'TOV_B', 'BLK_B', 'SEASON_B_PCT', 'H/A_B', 'ELO_B', 'STREAK_B', 'MATCHUP_B', 'PER_B', 'ODDS_B',
                                                         'WINNER'])
+    final_df_lstm = pd.DataFrame(matches_organized_lstm, columns=['TEAM_ABBV', 'TEAM_ID', 'DATE',
+                                                        'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 
+                                                        'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'ELO_OPP', 'STREAK_A', 'PER_A',
+                                                        'WINNER'])
     final_df.to_csv('../data/seasons/winner/{}-{}.csv'.format(first_season, last_season-1))
+    final_df_lstm.to_csv('../data/seasons/winner/LSTM/{}-{}.csv'.format(first_season, last_season-1))

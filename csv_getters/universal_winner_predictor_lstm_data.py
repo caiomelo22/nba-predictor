@@ -109,7 +109,7 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2010
+    first_season = 2018
     last_season = 2019
     
     print("Getting NBA Seasons Information...")
@@ -220,17 +220,18 @@ if __name__ == "__main__":
         
         matches_organized.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
                         g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
-                        g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, team_a_streak,
+                        g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
                          teams_per[team_a_id], winner_bin])
         
         matches_organized.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
                         g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
-                        g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, team_b_streak,
+                        g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
                          teams_per[team_b_id], abs(winner_bin-1)])
         
         update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
     
     final_df = pd.DataFrame(matches_organized, columns=['TEAM_ABBV', 'TEAM_ID', 'DATE',
-                                                        'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'STREAK_A', 'PER_A',
+                                                        'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 
+                                                        'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'ELO_OPP', 'STREAK_A', 'PER_A',
                                                         'WINNER'])
     final_df.to_csv('../data/seasons/winner/LSTM/{}-{}.csv'.format(first_season, last_season-1))

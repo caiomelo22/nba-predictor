@@ -15,7 +15,7 @@ import keras
 
 " Importing the dataset "
 
-dataset = pd.read_csv('../../data/seasons/winner/LSTM/2010-2018.csv')
+dataset = pd.read_csv('../../data/seasons/winner/LSTM/2018-2018.csv')
 dataset['DATE'] = pd.to_datetime(dataset['DATE'])
 X = dataset.iloc[:, 1:-1].values
 y = dataset.iloc[:, -1].values
@@ -34,12 +34,13 @@ X[:,3:] = sc.fit_transform(X[:,3:])
 tracking = []
 features = []
 labels = []
+print('Parsing the data to LSTM format...')
 for i in range(2, len(X), 2):
     team_a_id = X[i-2,1]
     team_b_id = X[i-1,1]
     team_a_abbv = X[i-2,0]
     team_b_abbv = X[i-1,0]
-    print('{}: {} x {}. Team A won? {}'.format(i, team_a_abbv, team_b_abbv, y[i-2]))
+    # print('{}: {} x {}. Team A won? {}'.format(i, team_a_abbv, team_b_abbv, y[i-2]))
     team_a_previous_games = X[(X[:,1] == team_a_id) & (X[:,2] < X[i-1,2]),:]
     team_b_previous_games = X[(X[:,1] == team_b_id) & (X[:,2] < X[i-1,2]),:]
     if len(team_a_previous_games) >= timesteps and len(team_b_previous_games) >= timesteps:
