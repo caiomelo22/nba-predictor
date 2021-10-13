@@ -88,10 +88,8 @@ if __name__ == "__main__":
         team_b_abbv = g.iloc[1:2,:].iloc[0]['TEAM_ABBREVIATION']
         
         winner = 'B'
-        winner_bin = 0
         
         if g.iloc[[0],:].iloc[0]['WL'] == 'W':
-            winner_bin = 1
             winner = 'A'
             
         if '@' in g.iloc[[0],:].iloc[0]['MATCHUP']:
@@ -174,23 +172,48 @@ if __name__ == "__main__":
         stats_team_a = hf.get_team_stats (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_pct, team_a_ha_percentage, elo_a, team_a_streak, team_a_last_matchups_percentage, teams_per[team_a_id], team_a_odds)
         stats_team_b = hf.get_team_stats (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_pct, team_b_ha_percentage, elo_b, team_b_streak, team_b_last_matchups_percentage, teams_per[team_b_id], team_b_odds)
             
-        matches_organized.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a + stats_team_b + [winner])
-        
-        
-        matches_organized_lstm.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
-                        g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
-                        g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
-                         teams_per[team_a_id], winner_bin])
-        
-        matches_organized_lstm.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
-                        g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
-                        g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
-                         teams_per[team_b_id], abs(winner_bin-1)])
-        
-        stats_team_a_regression = hf.get_team_stats_regression (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_games, elo_a, teams_per[team_a_id], team_a_last_ha_games, team_a_ha_previous_games_pts_conceded)
-        stats_team_b_regression = hf.get_team_stats_regression (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_games, elo_b, teams_per[team_b_id], team_b_last_ha_games, team_b_ha_previous_games_pts_conceded)
+        winner_bin = 0
+        if '@' in g.iloc[[0],:].iloc[0]['MATCHUP']:
+            if winner == 'B':
+                winner_bin = 1
+            matches_organized.append([season_id, game_date, team_b_abbv, team_a_abbv] + stats_team_b + stats_team_a + [winner_bin])
             
-        matches_organized_regression.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a_regression + stats_team_b_regression + [team_a_pts, team_b_pts])
+            
+            matches_organized_lstm.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
+                            g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
+                            g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
+                             teams_per[team_a_id], winner_bin])
+            
+            matches_organized_lstm.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
+                            g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
+                            g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
+                             teams_per[team_b_id], abs(winner_bin-1)])
+            
+            stats_team_a_regression = hf.get_team_stats_regression (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_games, elo_a, teams_per[team_a_id], team_a_last_ha_games, team_a_ha_previous_games_pts_conceded)
+            stats_team_b_regression = hf.get_team_stats_regression (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_games, elo_b, teams_per[team_b_id], team_b_last_ha_games, team_b_ha_previous_games_pts_conceded)
+                
+            matches_organized_regression.append([season_id, game_date, team_b_abbv, team_a_abbv] + stats_team_b_regression + stats_team_a_regression + [team_b_pts, team_a_pts])
+        else:
+            if winner == 'A':
+                winner_bin = 1
+            matches_organized.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a + stats_team_b + [winner_bin])
+            
+            
+            matches_organized_lstm.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
+                            g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
+                            g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
+                             teams_per[team_a_id], winner_bin])
+            
+            matches_organized_lstm.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
+                            g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
+                            g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
+                             teams_per[team_b_id], abs(winner_bin-1)])
+            
+            stats_team_a_regression = hf.get_team_stats_regression (team_a_previous_10_games, team_a_previous_games_pts_conceded, team_a_season_games, elo_a, teams_per[team_a_id], team_a_last_ha_games, team_a_ha_previous_games_pts_conceded)
+            stats_team_b_regression = hf.get_team_stats_regression (team_b_previous_10_games, team_b_previous_games_pts_conceded, team_b_season_games, elo_b, teams_per[team_b_id], team_b_last_ha_games, team_b_ha_previous_games_pts_conceded)
+                
+            matches_organized_regression.append([season_id, game_date, team_a_abbv, team_b_abbv] + stats_team_a_regression + stats_team_b_regression + [team_a_pts, team_b_pts])
+        
         
         hf.update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
     
