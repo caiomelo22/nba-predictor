@@ -7,6 +7,8 @@ Created on Mon Oct 11 14:58:14 2021
 
 from statistics import mean
 from datetime import datetime, timedelta
+import pandas as pd
+import os.path
 
 def get_k(vic_margin, elo_diff_winner):
     return 20*((vic_margin+3)**0.8)/(7.5 + 0.006*elo_diff_winner)
@@ -72,11 +74,19 @@ def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
     else:
         return 0
     
+def load_bets_csv():
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(my_path, '../data/odds.csv')
+    dataset = pd.read_csv(path)
+    dataset['GAME_DATE'] = pd.to_datetime(dataset['GAME_DATE']).dt.normalize()
+    return dataset
+
 def get_teams_odds(team_a_id, team_b_id, game_date, season_odds):
     try:
-        game = next(filter(lambda x: game_date.date() <= x['date'].date() and (game_date.date() + timedelta(days=2)) >= x['date'].date() and x['team_a_id'] == team_a_id and x['team_b_id'] == team_b_id, season_odds))
-        return float(game['odds_team_a']), float(game['odds_team_b'])
-    except StopIteration:
+        game = season_odds[(season_odds['TEAM_A_ID'] == team_a_id) & (season_odds['TEAM_B_ID'] == team_b_id) & (game_date <= season_odds['GAME_DATE']) & ((game_date + timedelta(days=2)) >= season_odds['GAME_DATE'])].iloc[0]
+        # game = next(filter(lambda x: game_date.date() <= x['date'].date() and (game_date.date() + timedelta(days=2)) >= x['date'].date() and x['team_a_id'] == team_a_id and x['team_b_id'] == team_b_id, season_odds))
+        return float(game['TEAM_A_ODDS']), float(game['TEAM_B_ODDS'])
+    except IndexError:
         return None, None
     except ValueError:
         return None, None
@@ -108,3 +118,6 @@ def get_team_stats_regression (previous_games, previous_games_pts_conceded, seas
         exit()
     return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FT_PCT'].mean(), previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
             elo, per, ha_previous_games['PTS'].mean(), ha_previous_games_pts_conceded, season_games['PTS'].mean()]
+
+if __name__ == "__main__":
+    dataset = load_bets_csv()

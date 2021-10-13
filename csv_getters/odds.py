@@ -3,6 +3,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup as soup
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
+import pandas as pd
 from nba_api.stats.static import teams 
 import time
 from datetime import datetime, timedelta
@@ -44,21 +45,21 @@ def get_betting_odds(season):
                 continue
             date_text = date_info_splitted[0].strip()
             # print(date_text)
-            games_parsed = [dict(date=datetime(int(date_text.split(' ')[2]), 
+            games_parsed = [[datetime(int(date_text.split(' ')[2]), 
                                                 months[date_text.split(' ')[1]], 
                                                 int(date_text.split(' ')[0]), 
                                                 hour=int(g.contents[0].text.strip().split(':')[0]), 
                                                 minute=int(g.contents[0].text.strip().split(':')[1]), 
                                                 second=0) - timedelta(hours=3, minutes=0), # Substracting 3 hours to align with the nba api timezone
                                   # "{} - {}".format(date_text, g.contents[0].text.strip()),
-                                  team_a_id=next(filter(lambda x: x['full_name'] == g.contents[1].text.split('-')[0].strip(), nba_teams))['id'],
-                                  team_b_id=next(filter(lambda x: x['full_name'] == g.contents[1].text.split('-')[1].strip(), nba_teams))['id'],
-                                  team_a=g.contents[1].text.split('-')[0].strip(),
-                                  team_b=g.contents[1].text.split('-')[1].strip(),
-                                  pts_team_a=g.contents[2].text.split(':')[0].strip(),
-                                  pts_team_b=g.contents[2].text.split(':')[1].replace('OT', '').strip(),
-                                  odds_team_a=g.contents[3].text, 
-                                  odds_team_b=g.contents[4].text) 
+                                  next(filter(lambda x: x['full_name'] == g.contents[1].text.split('-')[0].strip(), nba_teams))['id'], # Team A Id
+                                  next(filter(lambda x: x['full_name'] == g.contents[1].text.split('-')[1].strip(), nba_teams))['id'], # Team B Id
+                                  g.contents[1].text.split('-')[0].strip(), # Team A Name
+                                  g.contents[1].text.split('-')[1].strip(), # Team B Name
+                                  g.contents[2].text.split(':')[0].strip(), # Team A Pts
+                                  g.contents[2].text.split(':')[1].replace('OT', '').strip(), # Team B Pts
+                                  g.contents[3].text,  # Team A Odds
+                                  g.contents[4].text] # Team B Odds
                                   for g in date_games if len(g.contents[2].text.split(':')) > 1]
             games.extend(games_parsed)
             # print('{} Games appended'.format(len(games_parsed)))
@@ -79,5 +80,13 @@ def get_betting_odds(season):
     
 
 if __name__ == "__main__":
-    season = '2009-2010'
-    games = get_betting_odds(season)
+    season = 2008
+    games = []
+    while season < 2021:
+        print('Getting odds for season {}-{}...'.format(season, season + 1))
+        games.extend(get_betting_odds('{}-{}'.format(season,season+1)))
+        season += 1
+    
+    odds_df = pd.DataFrame(games, columns=['GAME_DATE', 'TEAM_A_ID', 'TEAM_B_ID', 'TEAM_A', 'TEAM_B', 'TEAM_A_PTS', 'TEAM_B_PTS', 'TEAM_A_ODDS', 'TEAM_B_ODDS'])
+    odds_df.to_csv('../data/odds.csv')
+    print(len(games))

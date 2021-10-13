@@ -11,7 +11,6 @@ from functools import reduce
 from nba_api.stats.endpoints import leaguegamelog
 from nba_api.stats.static import teams 
 import helper_functions as hf
-from odds import get_betting_odds
 
 if __name__ == "__main__":
     pd.options.mode.chained_assignment = None  # default='warn'
@@ -25,7 +24,7 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2010
+    first_season = 2018
     last_season = 2019
     
     print("Getting NBA Seasons Information...")
@@ -64,9 +63,8 @@ if __name__ == "__main__":
     matches_organized_regression = []
     
     season_id = ''    
-    current_season = first_season
-    print('Getting odds for season {}-{}...'.format(current_season, current_season + 1))
-    season_odds = get_betting_odds('{}-{}'.format(current_season, current_season + 1))
+    print('Getting historical odds...')
+    odds = hf.load_bets_csv()
     right_matchup_baseline = 0
     right_odds_baseline = 0
     
@@ -77,10 +75,7 @@ if __name__ == "__main__":
             break
         
         if season_id != '' and season_id != g.iloc[[0],:].iloc[0]['SEASON_ID']:
-            current_season += 1
             hf.reset_season_elo(season_id, g, elo_dic)
-            print('Getting odds for season {}-{}...'.format(current_season, current_season + 1))
-            season_odds = get_betting_odds('{}-{}'.format(current_season, current_season + 1))
         
         season_id = g.iloc[[0],:].iloc[0]['SEASON_ID']
         game_id = g.iloc[[0],:].iloc[0]['GAME_ID']
@@ -100,9 +95,9 @@ if __name__ == "__main__":
             winner = 'A'
             
         if '@' in g.iloc[[0],:].iloc[0]['MATCHUP']:
-            team_b_odds, team_a_odds = hf.get_teams_odds(team_b_id, team_a_id, game_date, season_odds)
+            team_b_odds, team_a_odds = hf.get_teams_odds(team_b_id, team_a_id, game_date, odds)
         else:
-            team_a_odds, team_b_odds = hf.get_teams_odds(team_a_id, team_b_id, game_date, season_odds)
+            team_a_odds, team_b_odds = hf.get_teams_odds(team_a_id, team_b_id, game_date, odds)
         
         team_a_previous_games = season_games.loc[(season_games['TEAM_ID'] == team_a_id) & (season_games['GAME_DATE'] < game_date)]
         team_b_previous_games = season_games.loc[(season_games['TEAM_ID'] == team_b_id) & (season_games['GAME_DATE'] < game_date)]
