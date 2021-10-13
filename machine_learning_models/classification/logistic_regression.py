@@ -8,39 +8,48 @@ Original file is located at
 """
 
 from statistics import mean
-import data_import_helper as dih
+import import_data_helper as idh
 
-" Importing the dataset "
+def logistic_regression(season = '2018-2018'):
 
-dataset, X, y, X_train, X_test, y_train, y_test = dih.import_data()
-
-" Training the Logistic Regression model on the Training set "
-
-from sklearn.linear_model import LogisticRegression
-classifier = LogisticRegression(random_state = 0)
-classifier.fit(X_train, y_train.ravel())
-
-" Predicting a new result "
-
-# print(classifier.predict(sc.transform([[113.1, 111.1, 0.4654999999999999, 0.37170000000000003, 0.8198000000000001, 43.9, 12.9, 5.8, 0.3, 1516.9609920473383, 105.3, 108.2, 0.44279999999999997, 0.36429999999999996, 0.7499999999999998, 43.7, 15.2, 4.7, 0.8, 1496.2140416710959]])))
-
-" Predicting the Test set results "
-
-y_pred = classifier.predict(X_test)
-# print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
-
-" Cross Validation Score "
-
-from sklearn.model_selection import cross_val_score
-
-print("Predictions for the test set with the cross validation score")
-crossValScores = cross_val_score(classifier, X_test, y_test.ravel())
-print(mean(crossValScores), crossValScores)
-
-" Making the Confusion Matrix "
-
-from sklearn.metrics import confusion_matrix, accuracy_score
-print("Predictions for the test set")
-cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
-print(cm)
-print(accuracy_score(y_test.ravel(), y_pred.ravel()))
+    " Importing the dataset "
+    
+    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
+    
+    " Training the Logistic Regression model on the Training set "
+    
+    from sklearn.linear_model import LogisticRegression
+    classifier = LogisticRegression(random_state = 0)
+    classifier.fit(X_train, y_train.ravel())
+    
+    " Predicting a new result "
+    
+    # print(classifier.predict(sc.transform([[113.1, 111.1, 0.4654999999999999, 0.37170000000000003, 0.8198000000000001, 43.9, 12.9, 5.8, 0.3, 1516.9609920473383, 105.3, 108.2, 0.44279999999999997, 0.36429999999999996, 0.7499999999999998, 43.7, 15.2, 4.7, 0.8, 1496.2140416710959]])))
+    
+    " Predicting the Test set results "
+    
+    y_pred = classifier.predict(X_test)
+    # print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
+    
+    " Cross Validation Score "
+    
+    from sklearn.model_selection import cross_val_score
+    
+    # print("Predictions for the test set with the cross validation score")
+    crossValScores = cross_val_score(classifier, X_test, y_test.ravel())
+    # print(mean(crossValScores), crossValScores)
+    
+    " Making the Confusion Matrix "
+    
+    from sklearn.metrics import confusion_matrix, accuracy_score
+    # print("Predictions for the test set")
+    cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
+    acc_score = accuracy_score(y_test, y_pred)
+    # print(cm)
+    # print(acc_score)
+    
+    return cm, acc_score
+    
+    
+if __name__ == "__main__":
+    logistic_regression()

@@ -25,7 +25,7 @@ def get_betting_odds(season):
     htmlContent = element.get_attribute('outerHTML')
     page_soup = soup(htmlContent, "html.parser")
     active_page = int(''.join(page_soup.find('span', {"class": "active-page"}).findAll(text=True)))
-    # print('Page', active_page)
+    print('Page', active_page)
     
     games = []
     
@@ -65,19 +65,19 @@ def get_betting_odds(season):
         
         btn_next_page = driver.find_element_by_xpath('/html/body/div[1]/div/div[2]/div[6]/div[1]/div/div[1]/div[2]/div[1]/div[6]/div/a[2]')
         btn_next_page.click()
-        time.sleep(2)
+        time.sleep(4)
         
         element = driver.find_elements_by_id("tournamentTable")[0]
         htmlContent = element.get_attribute('outerHTML')
         page_soup = soup(htmlContent, "html.parser")
         active_page -= 1
         # active_page = ''.join(page_soup.find('span', {"class": "active-page"}).findAll(text=True))
-        # print('Page', active_page)
+        print('Page', active_page)
     
     driver.quit()
     return games
     
 
 if __name__ == "__main__":
-    season = '2012-2013'
+    season = '2009-2010'
     games = get_betting_odds(season)

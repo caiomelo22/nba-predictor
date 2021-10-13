@@ -12,132 +12,142 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import keras
+import os.path
 
-" Importing the dataset "
+def lstm(season = '2018-2018'):
 
-dataset = pd.read_csv('../../data/seasons/winner/LSTM/2018-2018.csv')
-dataset['DATE'] = pd.to_datetime(dataset['DATE'])
-X = dataset.iloc[:, 1:-1].values
-y = dataset.iloc[:, -1].values
-timesteps = 10
-print(dataset.iloc[:, 4:-1].columns, len(dataset.iloc[:, 4:-1].columns))
-print(len(X))
-
-" Feature Scaling "
-
-from sklearn.preprocessing import StandardScaler
-sc = StandardScaler()
-X[:,3:] = sc.fit_transform(X[:,3:])
-
-" Splitting the dataset into the Training set and Test set "
-
-tracking = []
-features = []
-labels = []
-print('Parsing the data to LSTM format...')
-for i in range(2, len(X), 2):
-    team_a_id = X[i-2,1]
-    team_b_id = X[i-1,1]
-    team_a_abbv = X[i-2,0]
-    team_b_abbv = X[i-1,0]
-    # print('{}: {} x {}. Team A won? {}'.format(i, team_a_abbv, team_b_abbv, y[i-2]))
-    team_a_previous_games = X[(X[:,1] == team_a_id) & (X[:,2] < X[i-1,2]),:]
-    team_b_previous_games = X[(X[:,1] == team_b_id) & (X[:,2] < X[i-1,2]),:]
-    if len(team_a_previous_games) >= timesteps and len(team_b_previous_games) >= timesteps:
-        game_tracking = np.concatenate((team_a_previous_games[-1*timesteps:, 1:], team_b_previous_games[-1*timesteps:, 1:]), axis = 1)
-        game = np.concatenate((team_a_previous_games[-1*timesteps:, 3:], team_b_previous_games[-1*timesteps:, 3:]), axis = 1)
-        tracking.append(game_tracking)
-        features.append(game)
-        labels.append(y[i-2])
+    " Importing the dataset "
+    
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(my_path, '../../data/seasons/winner/LSTM/{}.csv'.format(season))
+    dataset = pd.read_csv(path)
+    dataset['DATE'] = pd.to_datetime(dataset['DATE'])
+    X = dataset.iloc[:, 1:-1].values
+    y = dataset.iloc[:, -1].values
+    timesteps = 10
+    
+    " Feature Scaling "
+    
+    from sklearn.preprocessing import StandardScaler
+    sc = StandardScaler()
+    X[:,3:] = sc.fit_transform(X[:,3:])
+    
+    " Splitting the dataset into the Training set and Test set "
+    
+    tracking = []
+    features = []
+    labels = []
+    # print('Parsing the data to LSTM format...')
+    for i in range(2, len(X), 2):
+        team_a_id = X[i-2,1]
+        team_b_id = X[i-1,1]
+        team_a_abbv = X[i-2,0]
+        team_b_abbv = X[i-1,0]
+        # print('{}: {} x {}. Team A won? {}'.format(i, team_a_abbv, team_b_abbv, y[i-2]))
+        team_a_previous_games = X[(X[:,1] == team_a_id) & (X[:,2] < X[i-1,2]),:]
+        team_b_previous_games = X[(X[:,1] == team_b_id) & (X[:,2] < X[i-1,2]),:]
+        if len(team_a_previous_games) >= timesteps and len(team_b_previous_games) >= timesteps:
+            game_tracking = np.concatenate((team_a_previous_games[-1*timesteps:, 1:], team_b_previous_games[-1*timesteps:, 1:]), axis = 1)
+            game = np.concatenate((team_a_previous_games[-1*timesteps:, 3:], team_b_previous_games[-1*timesteps:, 3:]), axis = 1)
+            tracking.append(game_tracking)
+            features.append(game)
+            labels.append(y[i-2])
+        
+    
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
+    X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
+        
+    X_train = np.array(X_train).astype(np.float32)
+    X_test = np.array(X_test).astype(np.float32)
+    X_validation = np.array(X_validation).astype(np.float32)
+    
+    y_train = np.array(y_train).astype(np.float32)
+    y_test = np.array(y_test).astype(np.float32)
+    y_validation = np.array(y_validation).astype(np.float32)
+    
+    " Building the LSTM "
+    
+    lstm = keras.Sequential()
+    lstm.add(keras.layers.LSTM(1, input_shape=(X_train.shape[1], X_train.shape[2])))
+    lstm.add(keras.layers.Dropout(0.2))
+    
+    # Output layer
+    lstm.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+    
+    " Compiling the LSTM "
+    optimiser = tf.keras.optimizers.Adam()
+    lstm.compile(optimizer=optimiser,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    lstm.summary()
+    
+    " Training the LSTM on the Training set "
+    
+    history = lstm.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
+    
+    " Overfit check "
+    
+    fig, axs = plt.subplots(2)
+    
+    # create accuracy sublpot
+    axs[0].plot(history.history["accuracy"], label="train accuracy")
+    axs[0].plot(history.history["val_accuracy"], label="test accuracy")
+    axs[0].set_ylabel("Accuracy")
+    axs[0].legend(loc="lower right")
+    axs[0].set_title("Accuracy eval")
+    
+    # create error sublpot
+    axs[1].plot(history.history["loss"], label="train error")
+    axs[1].plot(history.history["val_loss"], label="test error")
+    axs[1].set_ylabel("Error")
+    axs[1].set_xlabel("Epoch")
+    axs[1].legend(loc="upper right")
+    axs[1].set_title("Error eval")
+    
+    plt.show()
+    
+    " Predicting single result "
+    
+    # print(lstm.predict(sc.transform([[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]])) > 0.5)
+    
+    " Predicting results with a margin of certainty"
+    
+    y_pred = lstm.predict(X_validation)
+    
+    rows = y_pred.shape[0]
+    cols = y_pred.shape[1]
+    
+    y_less_risk_test = []
+    y_less_risk_pred = []
+    
+    for y in range(0, rows -1):
+      if y_pred[y][0] <= 0.4 or y_pred[y][0] >= 0.6:
+        y_less_risk_test.append(y_validation[y])
+        y_less_risk_pred.append(y_pred[y] > 0.5)
+    
+    y_less_risk_test = np.array(y_less_risk_test)
+    y_less_risk_pred = np.array(y_less_risk_pred)
+    
+    from sklearn.metrics import confusion_matrix, accuracy_score
+    cm = confusion_matrix(y_less_risk_test, y_less_risk_pred)
+    # print('Predictions with a margin of certainty for the validation set')
+    # print(cm)
+    # print(accuracy_score(y_less_risk_test, y_less_risk_pred))
+    
+    y_pred = (y_pred > 0.5)
+    
+    " Predicting results for all data"
+    
+    from sklearn.metrics import confusion_matrix, accuracy_score
+    cm = confusion_matrix(y_validation, y_pred)
+    # print('\nPredictions for the entire validation set')
+    acc_score = accuracy_score(y_validation, y_pred)
+    # print(cm)
+    # print(acc_score)
+    
+    return cm, acc_score
     
 
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
-X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
-    
-X_train = np.array(X_train).astype(np.float32)
-X_test = np.array(X_test).astype(np.float32)
-X_validation = np.array(X_validation).astype(np.float32)
-
-y_train = np.array(y_train).astype(np.float32)
-y_test = np.array(y_test).astype(np.float32)
-y_validation = np.array(y_validation).astype(np.float32)
-
-" Building the LSTM "
-
-lstm = keras.Sequential()
-lstm.add(keras.layers.LSTM(1, input_shape=(X_train.shape[1], X_train.shape[2])))
-lstm.add(keras.layers.Dropout(0.2))
-
-# Output layer
-lstm.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
-
-" Compiling the LSTM "
-optimiser = tf.keras.optimizers.Adam()
-lstm.compile(optimizer=optimiser,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-lstm.summary()
-
-" Training the LSTM on the Training set "
-
-history = lstm.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
-
-" Overfit check "
-
-fig, axs = plt.subplots(2)
-
-# create accuracy sublpot
-axs[0].plot(history.history["accuracy"], label="train accuracy")
-axs[0].plot(history.history["val_accuracy"], label="test accuracy")
-axs[0].set_ylabel("Accuracy")
-axs[0].legend(loc="lower right")
-axs[0].set_title("Accuracy eval")
-
-# create error sublpot
-axs[1].plot(history.history["loss"], label="train error")
-axs[1].plot(history.history["val_loss"], label="test error")
-axs[1].set_ylabel("Error")
-axs[1].set_xlabel("Epoch")
-axs[1].legend(loc="upper right")
-axs[1].set_title("Error eval")
-
-plt.show()
-
-" Predicting single result "
-
-# print(lstm.predict(sc.transform([[1, 0, 0, 600, 1, 40, 3, 60000, 2, 1, 1, 50000]])) > 0.5)
-
-" Predicting results with a margin of certainty"
-
-y_pred = lstm.predict(X_validation)
-
-rows = y_pred.shape[0]
-cols = y_pred.shape[1]
-
-y_less_risk_test = []
-y_less_risk_pred = []
-
-for y in range(0, rows -1):
-  if y_pred[y][0] <= 0.4 or y_pred[y][0] >= 0.6:
-    y_less_risk_test.append(y_validation[y])
-    y_less_risk_pred.append(y_pred[y] > 0.5)
-
-y_less_risk_test = np.array(y_less_risk_test)
-y_less_risk_pred = np.array(y_less_risk_pred)
-
-from sklearn.metrics import confusion_matrix, accuracy_score
-cm = confusion_matrix(y_less_risk_test, y_less_risk_pred)
-print('Predictions with a margin of certainty for the validation set')
-print(cm)
-print(accuracy_score(y_less_risk_test, y_less_risk_pred))
-
-y_pred = (y_pred > 0.5)
-
-" Predicting results for all data"
-
-from sklearn.metrics import confusion_matrix, accuracy_score
-cm = confusion_matrix(y_validation, y_pred)
-print('\nPredictions for the entire validation set')
-print(cm)
-print(accuracy_score(y_validation, y_pred))
+if __name__ == "__main__":
+    lstm()
