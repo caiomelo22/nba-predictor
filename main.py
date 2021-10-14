@@ -19,7 +19,7 @@ from polynomial_regression import polynomial_regression
 from random_forest_regression import random_forest_regression
 
 if __name__ == "__main__":
-    season = '2008-2018'
+    season = '2008-2016'
     results = []
     print('Executing the logistic Regression model...')
     res = logistic_regression(season)
@@ -50,12 +50,12 @@ if __name__ == "__main__":
     print('Executing the Random Forest Regression model...')
     res = random_forest_regression(season)
     results_regression.append(dict(model='Random Forest Regression',r2_score=res[0], m2_error=res[1]))
-    print('Executing the ANN Regression model...')
-    res = ann_regression(season)
-    results_regression.append(dict(model='ANN Regression',r2_score=res[0], m2_error=res[1]))
-    print('Executing the LSTM Regression model...')
-    res = lstm_regression(season)
-    results_regression.append(dict(model='LSTM Regression',r2_score=res[0], m2_error=res[1]))
+    # print('Executing the ANN Regression model...')
+    # res = ann_regression(season)
+    # results_regression.append(dict(model='ANN Regression',r2_score=res[0], m2_error=res[1]))
+    # print('Executing the LSTM Regression model...')
+    # res = lstm_regression(season)
+    # results_regression.append(dict(model='LSTM Regression',r2_score=res[0], m2_error=res[1]))
     
     print('\nResults Classification:')
     results.sort(key=lambda x: x['acc'], reverse=True)

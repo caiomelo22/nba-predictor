@@ -21,7 +21,7 @@ def ann(season = '2018-2018'):
     my_path = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(my_path, '../../data/seasons/winner/{}.csv'.format(season))
     dataset = pd.read_csv(path)
-    dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
+    # dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1].values
     

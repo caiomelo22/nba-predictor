@@ -11,3 +11,7 @@ import sys
 current_path = pathlib.Path(__file__).parent.resolve()
 if (str(current_path) + '/machine_learning_models') not in sys.path:
     sys.path.append(str(current_path) + '/machine_learning_models')
+if (str(current_path) + '/machine_learning_models/classification') not in sys.path:
+    sys.path.append(str(current_path) + '/machine_learning_models/classification')
+if (str(current_path) + '/machine_learning_models/regression') not in sys.path:
+    sys.path.append(str(current_path) + '/machine_learning_models/regression')
