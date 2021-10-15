@@ -42,7 +42,7 @@ def multiple_linear_regression(season = '2018-2018'):
     # print(r2Score)
     # print(m2e)
     
-    return r2Score, m2e
+    return r2Score, m2e, regressor
     
     
 if __name__ == "__main__":

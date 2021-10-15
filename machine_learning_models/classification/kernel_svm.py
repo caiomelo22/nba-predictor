@@ -51,7 +51,7 @@ def kernel_svm(season = '2018-2018'):
     # print(cm)
     # print(acc_score)
     
-    return cm, acc_score
+    return cm, acc_score, classifier
     
 if __name__ == "__main__":
     kernel_svm()

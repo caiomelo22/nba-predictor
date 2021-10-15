@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     seasons_teams = []
     seasons_players = []
-    first_season = 2008
+    first_season = 2010
     last_season = 2018
     
     print("Getting NBA Seasons Information...")
