@@ -122,7 +122,10 @@ if __name__ == "__main__":
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
     plt.plot(xpoints, ypoints)
+    plt.ylabel("Profit($)")
+    plt.xlabel("Date")
+    plt.title("Profit by Date")
     plt.gcf().autofmt_xdate()
     plt.show()
     
-    print('Profit', profit)
+    print('Profit:', profit)

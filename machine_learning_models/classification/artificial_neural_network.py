@@ -71,7 +71,7 @@ def ann(season = '2018-2018'):
     axs[0].plot(history.history["val_accuracy"], label="test accuracy")
     axs[0].set_ylabel("Accuracy")
     axs[0].legend(loc="lower right")
-    axs[0].set_title("Accuracy eval")
+    axs[0].set_title("Accuracy eval (ANN)")
     
     # create error sublpot
     axs[1].plot(history.history["loss"], label="train error")
@@ -79,7 +79,7 @@ def ann(season = '2018-2018'):
     axs[1].set_ylabel("Error")
     axs[1].set_xlabel("Epoch")
     axs[1].legend(loc="upper right")
-    axs[1].set_title("Error eval")
+    axs[1].set_title("Error eval (ANN)")
     
     plt.show()
     
