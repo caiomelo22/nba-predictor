@@ -92,9 +92,9 @@ if __name__ == "__main__":
     results.sort(key=lambda x: x['acc'], reverse=True)
     [print('{}:\t{:.2f}'.format(x['model'], x['acc'])) for x in results]
     
-    # print('\nResults Regression:')
-    # results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
-    # [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
+    print('\nResults Regression:')
+    results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
+    [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     my_path = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(my_path, 'data/seasons/winner/2018-2018.csv')

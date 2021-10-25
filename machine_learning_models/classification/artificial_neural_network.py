@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import keras
 import os.path
 
-def ann(season = '2018-2018'):
+def ann(season = '2017-2017'):
 
     " Importing the dataset "
     

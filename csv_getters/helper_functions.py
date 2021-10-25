@@ -107,10 +107,10 @@ def get_wl_pct (previous_games):
         return win_pct, loss_pct
     return 0, 0
     
-def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, ha_percentage, elo, streak, matchups_pct, per, odds):
+def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, ha_percentage, elo, per, odds):
     return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
                         previous_games['FT_PCT'].mean(), previous_games['REB'].mean(), previous_games['TOV'].mean(),
-                        previous_games['BLK'].mean(), season_pct, ha_percentage, elo, streak, matchups_pct, per, odds]
+                        previous_games['BLK'].mean(), season_pct, ha_percentage, elo, per, odds]
     
 
 def get_team_stats_regression (previous_games, previous_games_pts_conceded, season_games, elo, per, ha_previous_games, ha_previous_games_pts_conceded):
