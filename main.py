@@ -92,9 +92,9 @@ if __name__ == "__main__":
     results.sort(key=lambda x: x['acc'], reverse=True)
     [print('{}:\t{:.2f}'.format(x['model'], x['acc'])) for x in results]
     
-    print('\nResults Regression:')
-    results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
-    [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
+    # print('\nResults Regression:')
+    # results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
+    # [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     my_path = os.path.abspath(os.path.dirname(__file__))
     path = os.path.join(my_path, 'data/seasons/winner/2018-2018.csv')
@@ -102,18 +102,58 @@ if __name__ == "__main__":
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1].values
     
+    print('Getting the feature correlation matrix...')
+    
+    import seaborn as sns
+    
+    try:
+        dependent_variables = dataset.iloc[:,5:-1]
+        corrmat = dependent_variables.corr()
+        top_corr_features = corrmat.index
+        plt.figure(figsize=(13,13))
+        #plot heat map
+        sns.set(font_scale=0.6)
+        g=sns.heatmap(dependent_variables.corr(),annot=True,cmap='Blues', fmt='0.1g')
+    except:
+        print('No correlation matrix for the selected model.')
+    
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X_transformed = sc.fit_transform(X)
     
-    y_pred = results[0]['classifier'].predict(X_transformed)
-    y_prob = results[0]['classifier'].predict_proba(X_transformed)
+    modelCont = 0
+    while True:
+        print('Attempting to get the probabilities with the {} model...'.format(results[modelCont]['model']))
+        try:
+            y_pred = results[modelCont]['classifier'].predict(X_transformed)
+            y_prob = results[modelCont]['classifier'].predict_proba(X_transformed)
+            print('Using the {} model for bet tracking!'.format(results[modelCont]['model']))
+            break
+        except:
+            print('{} model not suitable for betting test.'.format(results[modelCont]['model']))
+            modelCont += 1
     # y_pred = logisticRegression[2].predict(X_transformed)
     # y_prob = logisticRegression[2].predict_proba(X_transformed)
+    
     cm = confusion_matrix(y.ravel(), y_pred.ravel())
     acc_score = accuracy_score(y, y_pred)
     print(cm)
     print(acc_score)
+    
+    modelCont = 0
+    while True:
+        print('Attempting to get the feature importance chart with the {} model...'.format(results[modelCont]['model']))
+        try:
+            from sklearn.ensemble import ExtraTreesClassifier
+            print(results[modelCont]['classifier'].feature_importances_) #use inbuilt class feature_importances of tree based classifiers
+            feat_importances = pd.Series(results[modelCont]['classifier'].feature_importances_, index=dataset.iloc[:, 5:-1].columns)
+            feat_importances.nlargest(30).plot(kind='barh')
+            plt.show()
+            print('Using the {} model for the feature importance chart!'.format(results[modelCont]['model']))
+            break
+        except:
+            print('No feature importance chart for the the {} model...'.format(results[modelCont]['model']))
+            modelCont += 1
     
     profit = 0
     money_by_date = []

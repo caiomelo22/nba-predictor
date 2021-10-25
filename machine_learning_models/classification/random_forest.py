@@ -15,10 +15,11 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import cross_val_score
 import import_data_helper as idh
 
-def random_forest(season = '2018-2018'):
+def random_forest(season = '2017-2017'):
     " Importing the dataset "
     
     dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
+    print(dataset.head())
     
     " Training the model on the Training set "
     
@@ -68,12 +69,10 @@ def random_forest(season = '2018-2018'):
     """Feature Importance"""
     
     from sklearn.ensemble import ExtraTreesClassifier
-    # print("Feature importance")
-    # print(classifier.feature_importances_) #use inbuilt class feature_importances of tree based classifiers
-    #plot graph of feature importances for better visualization
-    # feat_importances = pd.Series(classifier.feature_importances_, index=X.columns)
-    # feat_importances.nlargest(30).plot(kind='barh')
-    # plt.show()
+    print("Feature importance")
+    feat_importances = pd.Series(classifier.feature_importances_, index=dataset.iloc[:, 5:-1].columns)
+    feat_importances.nlargest(30).plot(kind='barh')
+    plt.show()
     
     " Feature Correlation "
     

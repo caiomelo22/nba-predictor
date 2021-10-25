@@ -7,13 +7,17 @@ Created on Tue Oct 12 18:32:11 2021
 
 
 import pandas as pd
+from pathlib import Path
 import os.path
 
 def import_data_classification(season = '2018-2018'):
     " Importing the dataset "
     
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, '../data/seasons/winner/{}.csv'.format(season))
+    my_path = os.path.abspath(Path(os.path.abspath(os.path.dirname(__file__))).parent.absolute())
+    # print(my_path +  '\data\seasons\winner\{}.csv'.format(season))
+    path = my_path +  '\data\seasons\winner\{}.csv'.format(season)
+    # path = os.path.join(my_path, '/data/seasons/winner/{}.csv'.format(season))
+    # print(path)
     dataset = pd.read_csv(path)
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1:].values
