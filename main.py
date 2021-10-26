@@ -97,7 +97,7 @@ if __name__ == "__main__":
     [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, 'data/seasons/winner/2018-2018.csv')
+    path = os.path.join(my_path, 'data/seasons/winner/2018-2019.csv')
     dataset = pd.read_csv(path)
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1].values
@@ -132,28 +132,11 @@ if __name__ == "__main__":
         except:
             print('{} model not suitable for betting test.'.format(results[modelCont]['model']))
             modelCont += 1
-    # y_pred = logisticRegression[2].predict(X_transformed)
-    # y_prob = logisticRegression[2].predict_proba(X_transformed)
     
     cm = confusion_matrix(y.ravel(), y_pred.ravel())
     acc_score = accuracy_score(y, y_pred)
     print(cm)
     print(acc_score)
-    
-    modelCont = 0
-    while True:
-        print('Attempting to get the feature importance chart with the {} model...'.format(results[modelCont]['model']))
-        try:
-            from sklearn.ensemble import ExtraTreesClassifier
-            print(results[modelCont]['classifier'].feature_importances_) #use inbuilt class feature_importances of tree based classifiers
-            feat_importances = pd.Series(results[modelCont]['classifier'].feature_importances_, index=dataset.iloc[:, 5:-1].columns)
-            feat_importances.nlargest(30).plot(kind='barh')
-            plt.show()
-            print('Using the {} model for the feature importance chart!'.format(results[modelCont]['model']))
-            break
-        except:
-            print('No feature importance chart for the the {} model...'.format(results[modelCont]['model']))
-            modelCont += 1
     
     profit = 0
     money_by_date = []

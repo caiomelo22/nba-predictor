@@ -19,7 +19,6 @@ def random_forest(season = '2017-2017'):
     " Importing the dataset "
     
     dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
-    print(dataset.head())
     
     " Training the model on the Training set "
     
@@ -66,17 +65,17 @@ def random_forest(season = '2017-2017'):
     # print(cm)
     # accuracy_score(y_test, predictions)
     
-    """Feature Importance"""
+    # """Feature Importance"""
     
-    from sklearn.ensemble import ExtraTreesClassifier
-    print("Feature importance")
+    # from sklearn.ensemble import ExtraTreesClassifier
+    # print("Feature importance")
     feat_importances = pd.Series(classifier.feature_importances_, index=dataset.iloc[:, 5:-1].columns)
     feat_importances.nlargest(30).plot(kind='barh')
     plt.show()
     
-    " Feature Correlation "
+    # " Feature Correlation "
     
-    import seaborn as sns
+    # import seaborn as sns
     
     # dependent_variables_a = dataset.iloc[:,4:18]
     # corrmat_a = dependent_variables_a.corr()
