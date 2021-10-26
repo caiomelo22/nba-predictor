@@ -26,6 +26,8 @@ import datetime as dt
 import matplotlib.dates as mdates
 from sklearn.metrics import confusion_matrix, accuracy_score
 
+import pickle
+
 def plot_chart(title, x_label, y_label):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
@@ -53,34 +55,105 @@ if __name__ == "__main__":
     season = '2008-2017'
     results = []
     print('Executing the logistic Regression model...')
-    logisticRegression = logistic_regression(season)
+    Pkl_Filename = "models/LogisticRegressionModel.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            logisticRegression = pickle.load(file)
+    except:
+        logisticRegression = logistic_regression(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(logisticRegression, file)
     results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2]))
+    
     print('Executing the Kernel SVM model...')
-    res = kernel_svm(season)
+    Pkl_Filename = "models/KernelSVM.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = kernel_svm(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2]))
+    
     print('Executing the Naive Bayes model...')
-    res = naive_bayes(season)
+    Pkl_Filename = "models/NaiveBayes.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = naive_bayes(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2]))
+    
     print('Executing the Random Forest model...')
-    res = random_forest(season)
+    Pkl_Filename = "models/RandomForest.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = random_forest(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2]))
-    print('Executing the Artificial Neural Network model...')
-    res = ann(season)
-    results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
-    print('Executing the LSTM model...')
-    res = lstm(season)
-    results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
+    
+    # print('Executing the Artificial Neural Network model...')
+    # Pkl_Filename = "models/ANN.pkl"  
+    # try:
+    #     with open(Pkl_Filename, 'rb') as file:  
+    #         res = pickle.load(file)
+    # except:
+    #     res = ann(season)
+    #     # with open(Pkl_Filename, 'wb') as file:  
+    #     #     pickle.dump(res, file)
+    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
+    
+    # print('Executing the LSTM model...')
+    # Pkl_Filename = "models/LSTM.pkl"  
+    # try:
+    #     with open(Pkl_Filename, 'rb') as file:  
+    #         res = pickle.load(file)
+    # except:
+    #     res = lstm(season)
+    #     # with open(Pkl_Filename, 'wb') as file:  
+    #     #     pickle.dump(res, file)
+    # results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
     
     results_regression = []
     print('Executing the Multiple Linear Regression model...')
-    res = multiple_linear_regression(season)
+    Pkl_Filename = "models/MultipleLinearRegression.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = multiple_linear_regression(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results_regression.append(dict(model='Multiple Linear Regression',r2_score=res[0], m2_error=res[1]))
+    
     print('Executing the Polynomial Regression model...')
-    res = polynomial_regression(season)
+    Pkl_Filename = "models/PolynomialRegression.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = polynomial_regression(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results_regression.append(dict(model='Polynomial Regression',r2_score=res[0], m2_error=res[1]))
+    
     print('Executing the Random Forest Regression model...')
-    res = random_forest_regression(season)
+    Pkl_Filename = "models/RandomForestRegression.pkl"  
+    try:
+        with open(Pkl_Filename, 'rb') as file:  
+            res = pickle.load(file)
+    except:
+        res = random_forest_regression(season)
+        with open(Pkl_Filename, 'wb') as file:  
+            pickle.dump(res, file)
     results_regression.append(dict(model='Random Forest Regression',r2_score=res[0], m2_error=res[1]))
+    
     # # print('Executing the ANN Regression model...')
     # res = ann_regression(season)
     # results_regression.append(dict(model='ANN Regression',r2_score=res[0], m2_error=res[1]))
@@ -97,12 +170,24 @@ if __name__ == "__main__":
     [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, 'data/seasons/winner/2018-2019.csv')
+    path = os.path.join(my_path, 'data/seasons/winner/2018-2018.csv')
     dataset = pd.read_csv(path)
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1].values
     
-    print('Getting the feature correlation matrix...')
+    print("\nGetting the matchup baseline...")
+    
+    matchups = dataset[((dataset['MATCHUP_A'] >= dataset['MATCHUP_B']) & (dataset['WINNER'] == 1)) | 
+                       ((dataset['MATCHUP_B'] > dataset['MATCHUP_A']) & (dataset['WINNER'] == 0))]
+    print("Baseline Last Matchups: {}/{} -> {}".format(len(matchups.index),len(dataset.index),100*len(matchups.index)/len(dataset.index)))
+    
+    print("\nGetting the odds baseline...")
+    
+    matchups = dataset[((dataset['ODDS_A'] <= dataset['ODDS_B']) & (dataset['WINNER'] == 1)) | 
+                       ((dataset['ODDS_B'] < dataset['ODDS_A']) & (dataset['WINNER'] == 0))]
+    print("Baseline Odds: {}/{} -> {}".format(len(matchups.index),len(dataset.index),100*len(matchups.index)/len(dataset.index)))
+    
+    print('\nGetting the feature correlation matrix...')
     
     import seaborn as sns
     
@@ -122,10 +207,11 @@ if __name__ == "__main__":
     X_transformed = sc.fit_transform(X)
     
     modelCont = 0
+    highestAcc = 0
+    y_pred = results[modelCont]['classifier'].predict(X_transformed)
     while True:
-        print('Attempting to get the probabilities with the {} model...'.format(results[modelCont]['model']))
+        print('\nAttempting to get the probabilities with the {} model...'.format(results[modelCont]['model']))
         try:
-            y_pred = results[modelCont]['classifier'].predict(X_transformed)
             y_prob = results[modelCont]['classifier'].predict_proba(X_transformed)
             print('Using the {} model for bet tracking!'.format(results[modelCont]['model']))
             break
@@ -160,10 +246,12 @@ if __name__ == "__main__":
                 money_by_team[game['TEAM_B']] = 0
                 
             if game['WINNER'] == y_pred[index] and game['WINNER'] == 1:
+            # if game['ODDS_A'] >= game['ODDS_B'] and game['WINNER'] == 1:
                 bets.append(['A', game['ODDS_A'], y_prob[index,1], 1])
                 game_money = (bet_value*game['ODDS_A'] - bet_value)
                 money_by_team[game['TEAM_A']] += game_money
             elif game['WINNER'] == y_pred[index] and game['WINNER'] == 0:
+            # elif game['ODDS_B'] > game['ODDS_A'] and game['WINNER'] == 0:
                 bets.append(['B', game['ODDS_B'], y_prob[index,0], 1])
                 game_money = (bet_value*game['ODDS_B'] - bet_value)
                 money_by_team[game['TEAM_B']] += game_money
@@ -196,9 +284,11 @@ if __name__ == "__main__":
     money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
     money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
     
-    plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
+    print('\nPlotting charts...')
     
     plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
+    
+    plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
     
     plot_hist('Correct Bets', 'Probability', 'X Times', correct_bets_prob)
     
