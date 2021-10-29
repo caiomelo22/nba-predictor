@@ -50,6 +50,15 @@ def plot_pie_chart(title, labels, data):
     plt.pie(data_converted, labels = labels, startangle = 90, shadow = True, autopct='%.2f%%')
     plt.title(title)
     plt.show() 
+    
+def check_model_performance_on_game(game, prediction, bet_value):
+    if game['WINNER'] == prediction and game['WINNER'] == 1:
+        game_money = (bet_value*game['ODDS_A'] - bet_value)
+    elif game['WINNER'] == prediction and game['WINNER'] == 0:
+        game_money = (bet_value*game['ODDS_B'] - bet_value)
+    else:
+        game_money = -bet_value
+    return game_money
 
 if __name__ == "__main__":
     season = '2008-2017'
@@ -206,19 +215,34 @@ if __name__ == "__main__":
     sc = StandardScaler()
     X_transformed = sc.fit_transform(X)
     
+    print('\nGetting model with the best predictions...')
+    
     modelCont = 0
     highestAcc = 0
-    y_pred = results[modelCont]['classifier'].predict(X_transformed)
     while True:
-        print('\nAttempting to get the probabilities with the {} model...'.format(results[modelCont]['model']))
         try:
-            y_prob = results[modelCont]['classifier'].predict_proba(X_transformed)
-            print('Using the {} model for bet tracking!'.format(results[modelCont]['model']))
-            break
-        except:
-            print('{} model not suitable for betting test.'.format(results[modelCont]['model']))
+            results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
+            results[modelCont]['acc_test'] = accuracy_score(y, results[modelCont]['pred'])
+            if results[modelCont]['acc_test'] > highestAcc:
+                y_pred = results[modelCont]['pred']
+                highestAcc = results[modelCont]['acc_test']
+                print('Using predictions from {} model: {}'.format(results[modelCont]['model'], results[modelCont]['acc_test']))
             modelCont += 1
+        except IndexError:
+            break
     
+    print('\nGetting the probabilities of the best model possible...')
+    results.sort(key=lambda x: x['acc_test'], reverse=True)
+    
+    for res in results:
+        try:
+            y_prob = res['classifier'].predict_proba(X_transformed)
+            print('Using the {} model for probability tracking!'.format(res['model']))
+            break
+        except AttributeError:
+            continue
+    
+    print('\nDisplaying data for the {} model...'.format(results[0]['model']))
     cm = confusion_matrix(y.ravel(), y_pred.ravel())
     acc_score = accuracy_score(y, y_pred)
     print(cm)
@@ -227,11 +251,14 @@ if __name__ == "__main__":
     profit = 0
     money_by_date = []
     money_by_team = dict()
+    best_model_tracking = []
     bets = []
-    money_by_date.append([dataset.iloc[0,2], 0, 0])
+    best_model_tracking.append([dataset.iloc[0,2], 0, 0])
+    money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results], [0 for x in results])),  dict(zip([x['model'] for x in results], [0 for x in results]))])
     for index, game in dataset.iterrows():
         if game['GAME_DATE'] != money_by_date[-1][0]:
-            money_by_date.append([game['GAME_DATE'], 0, money_by_date[-1][2]])
+            best_model_tracking.append([game['GAME_DATE'],0,best_model_tracking[-1][2]])
+            money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results], [0 for x in results])), dict(money_by_date[-1][2])])
         
         game_money = 0
         if y_prob[index,0] >= y_prob[index,1]:
@@ -244,72 +271,77 @@ if __name__ == "__main__":
                 money_by_team[game['TEAM_A']] = 0
             if game['TEAM_B'] not in money_by_team:
                 money_by_team[game['TEAM_B']] = 0
-                
+            
+            game_money = check_model_performance_on_game(game, y_pred[index], bet_value)
             if game['WINNER'] == y_pred[index] and game['WINNER'] == 1:
-            # if game['ODDS_A'] >= game['ODDS_B'] and game['WINNER'] == 1:
                 bets.append(['A', game['ODDS_A'], y_prob[index,1], 1])
-                game_money = (bet_value*game['ODDS_A'] - bet_value)
                 money_by_team[game['TEAM_A']] += game_money
             elif game['WINNER'] == y_pred[index] and game['WINNER'] == 0:
-            # elif game['ODDS_B'] > game['ODDS_A'] and game['WINNER'] == 0:
                 bets.append(['B', game['ODDS_B'], y_prob[index,0], 1])
-                game_money = (bet_value*game['ODDS_B'] - bet_value)
                 money_by_team[game['TEAM_B']] += game_money
             else:
-                game_money = -bet_value
                 if y_pred[index] == 1:
                     bets.append(['A', game['ODDS_A'], y_prob[index,1], 0])
                     money_by_team[game['TEAM_A']] += game_money
                 else:
                     bets.append(['B', game['ODDS_B'], y_prob[index,0], 0])
                     money_by_team[game['TEAM_B']] += game_money
-            
-        money_by_date[-1][1] += game_money
-        money_by_date[-1][2] += game_money
+        
         profit += game_money
+        best_model_tracking[-1][1] += game_money
+        best_model_tracking[-1][2] += game_money
         
-        # print(index, game['ODDS_A'], game['ODDS_B'], game['WINNER'], y_pred[index], game_money)
+        for model in money_by_date[-1][1]:
+            game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
+            money_by_date[-1][1][model] += game_money_model
+            money_by_date[-1][2][model] += game_money_model
+            
+    best_model_pred = results[0]['pred']
+    best_model_tracking = np.array([x[2] for x in best_model_tracking], dtype=np.float32)
+    best_model_actual_tracking = np.array([x[2][results[0]['model']] for x in money_by_date], dtype=np.float32)
         
-    money_by_date = np.array(money_by_date, dtype=str)
-    correct_bets = list(filter(lambda x: x[3] == 1, bets))
-    missed_bets = list(filter(lambda x: x[3] == 0, bets))
-    correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
-    missed_bets_odds = np.array(list(map(lambda x: x[1], missed_bets)))
-    correct_bets_prob = np.array(list(map(lambda x: x[2], correct_bets)))
-    missed_bets_prob = np.array(list(map(lambda x: x[2], missed_bets)))
-    correct_bets_home = np.array(list(map(lambda x: x[0], correct_bets)))
-    missed_bets_home = np.array(list(map(lambda x: x[0], missed_bets)))
+    # print(index, game['ODDS_A'], game['ODDS_B'], game['WINNER'], y_pred[index], game_money)
+        
+    # money_by_date = np.array(money_by_date, dtype=str)
+    # correct_bets = list(filter(lambda x: x[3] == 1, bets))
+    # missed_bets = list(filter(lambda x: x[3] == 0, bets))
+    # correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
+    # missed_bets_odds = np.array(list(map(lambda x: x[1], missed_bets)))
+    # correct_bets_prob = np.array(list(map(lambda x: x[2], correct_bets)))
+    # missed_bets_prob = np.array(list(map(lambda x: x[2], missed_bets)))
+    # correct_bets_home = np.array(list(map(lambda x: x[0], correct_bets)))
+    # missed_bets_home = np.array(list(map(lambda x: x[0], missed_bets)))
     
-    money_by_team = dict(sorted(money_by_team.items(), key=lambda x: x[1]))
-    money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
-    money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
+    # money_by_team = dict(sorted(money_by_team.items(), key=lambda x: x[1]))
+    # money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
+    # money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
     
-    print('\nPlotting charts...')
+    # print('\nPlotting charts...')
     
-    plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
+    # plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
     
-    plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
+    # plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
     
-    plot_hist('Correct Bets', 'Probability', 'X Times', correct_bets_prob)
+    # plot_hist('Correct Bets', 'Probability', 'X Times', correct_bets_prob)
     
-    plot_hist('Missed Bets', 'Probability', 'X Times', missed_bets_prob)
+    # plot_hist('Missed Bets', 'Probability', 'X Times', missed_bets_prob)
     
-    plot_pie_chart('Correct Bets', ['Home', 'Away'], correct_bets_home)
+    # plot_pie_chart('Correct Bets', ['Home', 'Away'], correct_bets_home)
     
-    plot_pie_chart('Missed Bets', ['Home', 'Away'], missed_bets_home)
+    # plot_pie_chart('Missed Bets', ['Home', 'Away'], missed_bets_home)
     
-    plot_bar('Profit By Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
+    # plot_bar('Profit By Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
     
-    xpoints = money_by_date[:,0].astype(np.datetime64)
-    ypoints = money_by_date[:,2].astype(np.float32)
+    # xpoints = money_by_date[:,0].astype(np.datetime64)
+    # ypoints = money_by_date[:,2].astype(np.float32)
     
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
-    plt.plot(xpoints, ypoints)
-    plt.ylabel("Profit($)")
-    plt.xlabel("Date")
-    plt.title("Profit by Date")
-    plt.gcf().autofmt_xdate()
-    plt.show()
+    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    # plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
+    # plt.plot(xpoints, ypoints)
+    # plt.ylabel("Profit($)")
+    # plt.xlabel("Date")
+    # plt.title("Profit by Date")
+    # plt.gcf().autofmt_xdate()
+    # plt.show()
     
-    print('Profit:', profit)
+    print('\nProfit:', profit)
