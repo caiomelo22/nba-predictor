@@ -64,22 +64,24 @@ def ann(season = '2017-2017'):
     
     " Overfit check "
     
-    fig, axs = plt.subplots(2)
-    
     # create accuracy sublpot
-    axs[0].plot(history.history["accuracy"], label="train accuracy")
-    axs[0].plot(history.history["val_accuracy"], label="test accuracy")
-    axs[0].set_ylabel("Accuracy")
-    axs[0].legend(loc="lower right")
-    axs[0].set_title("Accuracy eval (ANN)")
+    plt.plot(history.history["accuracy"])
+    plt.plot(history.history["val_accuracy"])
+    plt.legend(['Train Accuracy', 'Test Accuracy'], loc='lower right')
+    plt.ylabel("Accuracy")
+    plt.xlabel("Epoch")
+    plt.title("Accuracy eval (ANN)")
+    # plt.set_ylabel("Accuracy")
+    # plt.legend(loc="lower right")
+    # plt.set_title("Accuracy eval (ANN)")
     
     # create error sublpot
-    axs[1].plot(history.history["loss"], label="train error")
-    axs[1].plot(history.history["val_loss"], label="test error")
-    axs[1].set_ylabel("Error")
-    axs[1].set_xlabel("Epoch")
-    axs[1].legend(loc="upper right")
-    axs[1].set_title("Error eval (ANN)")
+    # axs[1].plot(history.history["loss"], label="train error")
+    # axs[1].plot(history.history["val_loss"], label="test error")
+    # axs[1].set_ylabel("Error")
+    # axs[1].set_xlabel("Epoch")
+    # axs[1].legend(loc="upper right")
+    # axs[1].set_title("Error eval (ANN)")
     
     plt.show()
     

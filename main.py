@@ -28,6 +28,8 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 import pickle
 
+threshold = 1.75
+
 def plot_chart(title, x_label, y_label):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
@@ -35,7 +37,7 @@ def plot_chart(title, x_label, y_label):
     plt.show()
 
 def plot_hist(title, x_label, y_label, data):
-    plt.hist(data, density=False, bins=30)  # density=False would make counts
+    plt.hist(data, density=False, bins=20)  # density=False would make counts
     plot_chart(title, x_label, y_label)
     
 def plot_bar(title, x_label, y_label, x_data, y_data):
@@ -51,19 +53,63 @@ def plot_pie_chart(title, labels, data):
     plt.title(title)
     plt.show() 
     
+
+def check_game_with_odds(game, bet_value):
+    game_money = 0
+    if (game['ODDS_A'] <= game['ODDS_B'] and game['ODDS_A'] > threshold) or (game['ODDS_A'] > game['ODDS_B'] and game['ODDS_B'] > threshold):
+        prediction = game['ODDS_A'] <= game['ODDS_B']
+        if game['WINNER'] == prediction and game['WINNER'] == 1:
+            game_money = (bet_value*game['ODDS_A'] - bet_value)
+        elif game['WINNER'] == prediction and game['WINNER'] == 0:
+            game_money = (bet_value*game['ODDS_B'] - bet_value)
+        else:
+            game_money = -bet_value
+    return game_money
+    
+def check_game_with_matchups(game, bet_value):
+    game_money = 0
+    if (game['MATCHUP_A'] > game['MATCHUP_B'] and game['ODDS_A'] > threshold) or (game['MATCHUP_A'] < game['MATCHUP_B'] and game['ODDS_B'] > threshold):
+        prediction = game['MATCHUP_A'] > game['MATCHUP_B']
+        if game['WINNER'] == prediction and game['WINNER'] == 1:
+            game_money = (bet_value*game['ODDS_A'] - bet_value)
+        elif game['WINNER'] == prediction and game['WINNER'] == 0:
+            game_money = (bet_value*game['ODDS_B'] - bet_value)
+        else:
+            game_money = -bet_value
+    return game_money
+
 def check_model_performance_on_game(game, prediction, bet_value):
-    if game['WINNER'] == prediction and game['WINNER'] == 1:
-        game_money = (bet_value*game['ODDS_A'] - bet_value)
-    elif game['WINNER'] == prediction and game['WINNER'] == 0:
-        game_money = (bet_value*game['ODDS_B'] - bet_value)
-    else:
-        game_money = -bet_value
+    game_money = 0
+    if (prediction == 1 and game['ODDS_A'] > threshold) or (prediction == 0 and game['ODDS_B'] > threshold):
+        if game['WINNER'] == prediction and game['WINNER'] == 1:
+            game_money = (bet_value*game['ODDS_A'] - bet_value)
+        elif game['WINNER'] == prediction and game['WINNER'] == 0:
+            game_money = (bet_value*game['ODDS_B'] - bet_value)
+        else:
+            game_money = -bet_value
     return game_money
 
 if __name__ == "__main__":
     season = '2008-2017'
+    season_test = '2018-2018'
     results = []
-    print('Executing the logistic Regression model...')
+    
+    print('\nGetting data for the 2018 season for testing...')
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    
+    dataset_train = pd.read_csv(os.path.join(my_path, 'data/seasons/winner/{}.csv'.format(season)))
+    dataset_regression = pd.read_csv(os.path.join(my_path, 'data/seasons/score/{}.csv'.format(season_test)))
+    dataset_lstm = pd.read_csv(os.path.join(my_path, 'data/seasons/winner/LSTM/{}.csv'.format(season_test)))
+    path = os.path.join(my_path, 'data/seasons/winner/{}.csv'.format(season_test))
+    dataset = pd.read_csv(path)
+    
+    X = dataset.iloc[:, 5:-1].values
+    y = dataset.iloc[:, -1].values
+    
+    X_regression = dataset_regression.iloc[:, 5:-2].values
+    y_regression = dataset_regression.iloc[:, -2:].values
+    
+    print('\nExecuting the logistic Regression model...')
     Pkl_Filename = "models/LogisticRegressionModel.pkl"  
     try:
         with open(Pkl_Filename, 'rb') as file:  
@@ -72,7 +118,7 @@ if __name__ == "__main__":
         logisticRegression = logistic_regression(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(logisticRegression, file)
-    results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2]))
+    results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2], is_neural_network = False))
     
     print('Executing the Kernel SVM model...')
     Pkl_Filename = "models/KernelSVM.pkl"  
@@ -83,7 +129,7 @@ if __name__ == "__main__":
         res = kernel_svm(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2]))
+    results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
     
     print('Executing the Naive Bayes model...')
     Pkl_Filename = "models/NaiveBayes.pkl"  
@@ -94,7 +140,7 @@ if __name__ == "__main__":
         res = naive_bayes(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2]))
+    results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
     
     print('Executing the Random Forest model...')
     Pkl_Filename = "models/RandomForest.pkl"  
@@ -105,29 +151,15 @@ if __name__ == "__main__":
         res = random_forest(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2]))
+    results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
     
     # print('Executing the Artificial Neural Network model...')
-    # Pkl_Filename = "models/ANN.pkl"  
-    # try:
-    #     with open(Pkl_Filename, 'rb') as file:  
-    #         res = pickle.load(file)
-    # except:
-    #     res = ann(season)
-    #     # with open(Pkl_Filename, 'wb') as file:  
-    #     #     pickle.dump(res, file)
-    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
+    # res = ann(season)
+    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = True))
     
     # print('Executing the LSTM model...')
-    # Pkl_Filename = "models/LSTM.pkl"  
-    # try:
-    #     with open(Pkl_Filename, 'rb') as file:  
-    #         res = pickle.load(file)
-    # except:
-    #     res = lstm(season)
-    #     # with open(Pkl_Filename, 'wb') as file:  
-    #     #     pickle.dump(res, file)
-    # results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
+    # res = lstm(season)
+    # results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = True))
     
     results_regression = []
     print('Executing the Multiple Linear Regression model...')
@@ -139,7 +171,7 @@ if __name__ == "__main__":
         res = multiple_linear_regression(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results_regression.append(dict(model='Multiple Linear Regression',r2_score=res[0], m2_error=res[1]))
+    results_regression.append(dict(model='Multiple Linear Regression',r2_score=res[0], m2_error=res[1], regressor=res[2]))
     
     print('Executing the Polynomial Regression model...')
     Pkl_Filename = "models/PolynomialRegression.pkl"  
@@ -150,7 +182,7 @@ if __name__ == "__main__":
         res = polynomial_regression(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results_regression.append(dict(model='Polynomial Regression',r2_score=res[0], m2_error=res[1]))
+    results_regression.append(dict(model='Polynomial Regression',r2_score=res[0], m2_error=res[1], regressor=res[2]))
     
     print('Executing the Random Forest Regression model...')
     Pkl_Filename = "models/RandomForestRegression.pkl"  
@@ -161,67 +193,87 @@ if __name__ == "__main__":
         res = random_forest_regression(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results_regression.append(dict(model='Random Forest Regression',r2_score=res[0], m2_error=res[1]))
+    results_regression.append(dict(model='Random Forest Regression',r2_score=res[0], m2_error=res[1], regressor=res[2]))
     
-    # # print('Executing the ANN Regression model...')
+    # print('Executing the ANN Regression model...')
     # res = ann_regression(season)
     # results_regression.append(dict(model='ANN Regression',r2_score=res[0], m2_error=res[1]))
     # print('Executing the LSTM Regression model...')
     # res = lstm_regression(season)
     # results_regression.append(dict(model='LSTM Regression',r2_score=res[0], m2_error=res[1]))
     
-    print('\nResults Classification:')
+    matchups_baseline = dataset_train[((dataset_train['MATCHUP_A'] >= dataset_train['MATCHUP_B']) & (dataset_train['WINNER'] == 1)) | 
+                       ((dataset_train['MATCHUP_B'] > dataset_train['MATCHUP_A']) & (dataset_train['WINNER'] == 0))]
+    odds_baseline = dataset_train[((dataset_train['ODDS_A'] <= dataset_train['ODDS_B']) & (dataset_train['WINNER'] == 1)) | 
+                       ((dataset_train['ODDS_B'] < dataset_train['ODDS_A']) & (dataset_train['WINNER'] == 0))]
+    
+    print('\nResults Classification ({}):'.format(season))
     results.sort(key=lambda x: x['acc'], reverse=True)
-    [print('{}:\t{:.2f}'.format(x['model'], x['acc'])) for x in results]
+    [print('{}:\t{:.4f}'.format(x['model'], x['acc'])) for x in results]
+    print('Baseline Last Machups:\t{:.4f}'.format(100*len(matchups_baseline.index)/len(dataset_train.index)))
+    print('Baseline Odds:\t{:.4f}'.format(100*len(odds_baseline.index)/len(dataset_train.index)))
     
-    print('\nResults Regression:')
+    print('\nResults Regression ({}):'.format(season))
     results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
-    [print('{}:\t{:.2f}'.format(x['model'], x['r2_score'])) for x in results_regression]
-    
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, 'data/seasons/winner/2018-2018.csv')
-    dataset = pd.read_csv(path)
-    X = dataset.iloc[:, 5:-1].values
-    y = dataset.iloc[:, -1].values
-    
-    print("\nGetting the matchup baseline...")
-    
-    matchups = dataset[((dataset['MATCHUP_A'] >= dataset['MATCHUP_B']) & (dataset['WINNER'] == 1)) | 
-                       ((dataset['MATCHUP_B'] > dataset['MATCHUP_A']) & (dataset['WINNER'] == 0))]
-    print("Baseline Last Matchups: {}/{} -> {}".format(len(matchups.index),len(dataset.index),100*len(matchups.index)/len(dataset.index)))
-    
-    print("\nGetting the odds baseline...")
-    
-    matchups = dataset[((dataset['ODDS_A'] <= dataset['ODDS_B']) & (dataset['WINNER'] == 1)) | 
-                       ((dataset['ODDS_B'] < dataset['ODDS_A']) & (dataset['WINNER'] == 0))]
-    print("Baseline Odds: {}/{} -> {}".format(len(matchups.index),len(dataset.index),100*len(matchups.index)/len(dataset.index)))
+    [print('{}:\t{:.4f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     print('\nGetting the feature correlation matrix...')
     
     import seaborn as sns
     
     try:
-        dependent_variables = dataset.iloc[:,5:-1]
+        dependent_variables = dataset.iloc[:,5:20]
         corrmat = dependent_variables.corr()
         top_corr_features = corrmat.index
         plt.figure(figsize=(13,13))
         #plot heat map
         sns.set(font_scale=0.6)
         g=sns.heatmap(dependent_variables.corr(),annot=True,cmap='Blues', fmt='0.1g')
+        plt.show()
     except:
         print('No correlation matrix for the selected model.')
+        
+    print('\nGetting regression models with the best results...')
+    
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.metrics import r2_score
+    poly_reg = PolynomialFeatures(degree = 2)
+    X_poly = poly_reg.fit_transform(X_regression)
+    
+    modelCont = 0
+    highestAcc = 0
+    while True:
+        try:
+            if results_regression[modelCont]['model'] == 'Polynomial Regression':
+                results_regression[modelCont]['pred_regression'] = results_regression[modelCont]['regressor'].predict(X_poly)
+            else:
+                results_regression[modelCont]['pred_regression'] = results_regression[modelCont]['regressor'].predict(X_regression)
+            results_regression[modelCont]['r2_score_test'] = r2_score(y_regression, results_regression[modelCont]['pred_regression'])
+            modelCont += 1
+        except IndexError:
+            break
+        
+    results_regression.sort(key=lambda x: x['r2_score_test'], reverse=True)
+    
+    print('\nResults Regression ({}):'.format(season_test))
+    results_regression.sort(key=lambda x: x['r2_score_test'], reverse=True)
+    [print('{}:\t{:.4f}'.format(x['model'], x['r2_score_test'])) for x in results_regression]
+    
+    
+    print('\nGetting classification model with the best predictions...')
     
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X_transformed = sc.fit_transform(X)
     
-    print('\nGetting model with the best predictions...')
     
     modelCont = 0
     highestAcc = 0
     while True:
         try:
             results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
+            if results[modelCont]['is_neural_network']:
+                results[modelCont]['pred'] = (results[modelCont]['pred'] > 0.5)
             results[modelCont]['acc_test'] = accuracy_score(y, results[modelCont]['pred'])
             if results[modelCont]['acc_test'] > highestAcc:
                 y_pred = results[modelCont]['pred']
@@ -230,9 +282,21 @@ if __name__ == "__main__":
             modelCont += 1
         except IndexError:
             break
+        
+    results.sort(key=lambda x: x['acc_test'], reverse=True)
+    
+    matchups_baseline = dataset[((dataset['MATCHUP_A'] >= dataset['MATCHUP_B']) & (dataset['WINNER'] == 1)) | 
+                       ((dataset['MATCHUP_B'] > dataset['MATCHUP_A']) & (dataset['WINNER'] == 0))]
+    odds_baseline = dataset[((dataset['ODDS_A'] <= dataset['ODDS_B']) & (dataset['WINNER'] == 1)) | 
+                       ((dataset['ODDS_B'] < dataset['ODDS_A']) & (dataset['WINNER'] == 0))]
+    
+    print('\nResults Classification ({}):'.format(season_test))
+    results.sort(key=lambda x: x['acc_test'], reverse=True)
+    [print('{}:\t{:.4f}'.format(x['model'], x['acc_test'])) for x in results]
+    print('Baseline Last Machups:\t{:.4f}'.format(100*len(matchups_baseline.index)/len(dataset.index)))
+    print('Baseline Odds:\t{:.4f}'.format(100*len(odds_baseline.index)/len(dataset.index)))
     
     print('\nGetting the probabilities of the best model possible...')
-    results.sort(key=lambda x: x['acc_test'], reverse=True)
     
     for res in results:
         try:
@@ -250,14 +314,15 @@ if __name__ == "__main__":
     
     profit = 0
     money_by_date = []
+    bets_tracking_matchups = [0]
+    bets_tracking_odds = [0]
     money_by_team = dict()
-    best_model_tracking = []
     bets = []
-    best_model_tracking.append([dataset.iloc[0,2], 0, 0])
     money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results], [0 for x in results])),  dict(zip([x['model'] for x in results], [0 for x in results]))])
     for index, game in dataset.iterrows():
-        if game['GAME_DATE'] != money_by_date[-1][0]:
-            best_model_tracking.append([game['GAME_DATE'],0,best_model_tracking[-1][2]])
+        if game['GAME_DATE'] != money_by_date[-1][0]:    
+            bets_tracking_matchups.append(bets_tracking_matchups[-1])
+            bets_tracking_odds.append(bets_tracking_odds[-1])
             money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results], [0 for x in results])), dict(money_by_date[-1][2])])
         
         game_money = 0
@@ -266,7 +331,7 @@ if __name__ == "__main__":
         else:
             bet_value = 10*y_prob[index,1]
         # bet_value = 10
-        if (y_pred[index] == 1 and game['ODDS_A'] > 1.25) or (y_pred[index] == 0 and game['ODDS_B'] > 1.25):
+        if (y_pred[index] == 1 and game['ODDS_A'] > threshold) or (y_pred[index] == 0 and game['ODDS_B'] > threshold):
             if game['TEAM_A'] not in money_by_team:
                 money_by_team[game['TEAM_A']] = 0
             if game['TEAM_B'] not in money_by_team:
@@ -288,60 +353,61 @@ if __name__ == "__main__":
                     money_by_team[game['TEAM_B']] += game_money
         
         profit += game_money
-        best_model_tracking[-1][1] += game_money
-        best_model_tracking[-1][2] += game_money
+        bets_tracking_matchups[-1] += check_game_with_matchups(game, bet_value)
+        bets_tracking_odds[-1] += check_game_with_odds(game, bet_value)
         
         for model in money_by_date[-1][1]:
             game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
             money_by_date[-1][1][model] += game_money_model
             money_by_date[-1][2][model] += game_money_model
             
-    best_model_pred = results[0]['pred']
-    best_model_tracking = np.array([x[2] for x in best_model_tracking], dtype=np.float32)
-    best_model_actual_tracking = np.array([x[2][results[0]['model']] for x in money_by_date], dtype=np.float32)
+    models_tracking =  [np.array([x[2][model] for x in money_by_date], dtype=np.float32) for model in money_by_date[-1][1]]
         
-    # print(index, game['ODDS_A'], game['ODDS_B'], game['WINNER'], y_pred[index], game_money)
-        
-    # money_by_date = np.array(money_by_date, dtype=str)
-    # correct_bets = list(filter(lambda x: x[3] == 1, bets))
-    # missed_bets = list(filter(lambda x: x[3] == 0, bets))
-    # correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
-    # missed_bets_odds = np.array(list(map(lambda x: x[1], missed_bets)))
+    money_by_date = np.array(money_by_date, dtype=str)
+    correct_bets = list(filter(lambda x: x[3] == 1, bets))
+    missed_bets = list(filter(lambda x: x[3] == 0, bets))
+    correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
+    missed_bets_odds = np.array(list(map(lambda x: x[1], missed_bets)))
     # correct_bets_prob = np.array(list(map(lambda x: x[2], correct_bets)))
     # missed_bets_prob = np.array(list(map(lambda x: x[2], missed_bets)))
-    # correct_bets_home = np.array(list(map(lambda x: x[0], correct_bets)))
-    # missed_bets_home = np.array(list(map(lambda x: x[0], missed_bets)))
+    correct_bets_home = np.array(list(map(lambda x: x[0], correct_bets)))
+    missed_bets_home = np.array(list(map(lambda x: x[0], missed_bets)))
     
-    # money_by_team = dict(sorted(money_by_team.items(), key=lambda x: x[1]))
-    # money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
-    # money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
+    money_by_team = dict(sorted(money_by_team.items(), key=lambda x: x[1]))
+    money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
+    money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
     
-    # print('\nPlotting charts...')
+    print('\nProfit:', profit)
     
-    # plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
+    print('\nPlotting charts...')
     
-    # plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
+    plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
+    
+    plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
     
     # plot_hist('Correct Bets', 'Probability', 'X Times', correct_bets_prob)
     
     # plot_hist('Missed Bets', 'Probability', 'X Times', missed_bets_prob)
     
-    # plot_pie_chart('Correct Bets', ['Home', 'Away'], correct_bets_home)
+    plot_pie_chart('Correct Bets', ['Home', 'Away'], correct_bets_home)
     
-    # plot_pie_chart('Missed Bets', ['Home', 'Away'], missed_bets_home)
+    plot_pie_chart('Missed Bets', ['Home', 'Away'], missed_bets_home)
     
-    # plot_bar('Profit By Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
+    plot_bar('Profit By Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
     
-    # xpoints = money_by_date[:,0].astype(np.datetime64)
+    xpoints = money_by_date[:,0].astype(np.datetime64)
     # ypoints = money_by_date[:,2].astype(np.float32)
     
-    # plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    # plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
-    # plt.plot(xpoints, ypoints)
-    # plt.ylabel("Profit($)")
-    # plt.xlabel("Date")
-    # plt.title("Profit by Date")
-    # plt.gcf().autofmt_xdate()
-    # plt.show()
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
+    for model in models_tracking:
+        plt.plot(xpoints, model)
+    plt.plot(xpoints, bets_tracking_matchups)
+    plt.plot(xpoints, bets_tracking_odds)
     
-    print('\nProfit:', profit)
+    plt.legend([x['model'] for x in results] + ['Matchups Baseline', 'Odds Baseline'], loc='lower left')
+    plt.ylabel("Profit($)")
+    plt.xlabel("Date")
+    plt.title("Profit by Date")
+    plt.gcf().autofmt_xdate()
+    plt.show()

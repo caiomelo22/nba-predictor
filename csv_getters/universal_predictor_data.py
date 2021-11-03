@@ -25,8 +25,8 @@ if __name__ == "__main__":
     seasons_teams = []
     seasons_players = []
     first_season = 2018
-    first_season_id = 20000 + first_season
     last_season = 2020
+    first_season_id = 20000 + first_season
     
     print("Getting NBA Seasons Information...")
     for i in range(first_season,last_season):
@@ -176,12 +176,12 @@ if __name__ == "__main__":
         matches_organized_lstm.append([team_a_abbv, team_a_id, game_date, team_a_pts, team_b_pts, g.iloc[[0],:].iloc[0]['FG_PCT'], g.iloc[[0],:].iloc[0]['FG3_PCT'], 
                         g.iloc[[0],:].iloc[0]['FT_PCT'], g.iloc[[0],:].iloc[0]['REB'], g.iloc[[0],:].iloc[0]['TOV'],
                         g.iloc[[0],:].iloc[0]['BLK'], team_a_season_pct, team_a_ha_percentage, elo_a, elo_b, team_a_streak,
-                         teams_per[team_a_id], 1 if winner == 'A' else 0])
+                         teams_per[team_a_id], team_a_odds, team_b_odds, 1 if winner == 'A' else 0])
         
         matches_organized_lstm.append([team_b_abbv, team_b_id, game_date, team_b_pts, team_a_pts, g.iloc[1:2,:].iloc[0]['FG_PCT'], g.iloc[1:2,:].iloc[0]['FG3_PCT'], 
                         g.iloc[1:2,:].iloc[0]['FT_PCT'], g.iloc[1:2,:].iloc[0]['REB'], g.iloc[1:2,:].iloc[0]['TOV'],
                         g.iloc[1:2,:].iloc[0]['BLK'], team_b_season_pct, team_b_ha_percentage, elo_b, elo_a, team_b_streak,
-                         teams_per[team_b_id],  1 if winner == 'B' else 0])
+                         teams_per[team_b_id], team_b_odds, team_a_odds,  1 if winner == 'B' else 0])
     
         
         hf.update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, team_b_pts)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
                                                         'WINNER'])
     final_df_lstm = pd.DataFrame(matches_organized_lstm, columns=['TEAM_ABBV', 'TEAM_ID', 'DATE',
                                                         'PTS_A', 'PTS_CON_A', 'FG_PCT_A', 'FG3_PCT_A', 'FT_PCT_A', 'REB_A', 'TOV_A', 'BLK_A', 
-                                                        'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'ELO_OPP', 'STREAK_A', 'PER_A',
+                                                        'SEASON_A_PCT', 'H/A_A', 'ELO_A', 'ELO_OPP', 'STREAK_A', 'PER_A', 'ODDS_A', 'ODDS_B',
                                                         'WINNER'])
     final_df_regression = pd.DataFrame(matches_organized_regression, columns=['SEASON_ID', 'GAME_DATE', 'TEAM_A', 'TEAM_B',
                                                         'PTS_A', 'PTS_CON_A', 'FT_PCT_A', 'FG_PCT_A', 'FG3_PCT_A', 'ELO_A', 'PER_A', 'HA_PTS_A', 'HA_PTS_CON_A', 'SEASON_PTS_A',
