@@ -8,7 +8,7 @@ import initialize
 from logistic_regression import logistic_regression
 from artificial_neural_network import ann
 from kernel_svm import kernel_svm
-from lstm import lstm
+from lstm import lstm, parse_lstm_data
 from naive_bayes import naive_bayes
 from random_forest import random_forest
 
@@ -106,6 +106,9 @@ if __name__ == "__main__":
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1].values
     
+    X_lstm = dataset_lstm.iloc[:, 1:-1].values
+    y_lstm = dataset_lstm.iloc[:, -1].values
+    
     X_regression = dataset_regression.iloc[:, 5:-2].values
     y_regression = dataset_regression.iloc[:, -2:].values
     
@@ -118,7 +121,7 @@ if __name__ == "__main__":
         logisticRegression = logistic_regression(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(logisticRegression, file)
-    results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2], is_neural_network = False))
+    results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2]))
     
     print('Executing the Kernel SVM model...')
     Pkl_Filename = "models/KernelSVM.pkl"  
@@ -129,7 +132,7 @@ if __name__ == "__main__":
         res = kernel_svm(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
+    results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2]))
     
     print('Executing the Naive Bayes model...')
     Pkl_Filename = "models/NaiveBayes.pkl"  
@@ -140,7 +143,7 @@ if __name__ == "__main__":
         res = naive_bayes(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
+    results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2]))
     
     print('Executing the Random Forest model...')
     Pkl_Filename = "models/RandomForest.pkl"  
@@ -151,15 +154,15 @@ if __name__ == "__main__":
         res = random_forest(season)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
-    results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = False))
+    results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2]))
     
     # print('Executing the Artificial Neural Network model...')
     # res = ann(season)
-    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = True))
+    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
     
-    # print('Executing the LSTM model...')
-    # res = lstm(season)
-    # results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2], is_neural_network = True))
+    print('Executing the LSTM model...')
+    res = lstm(season)
+    results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
     
     results_regression = []
     print('Executing the Multiple Linear Regression model...')
@@ -265,16 +268,24 @@ if __name__ == "__main__":
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X_transformed = sc.fit_transform(X)
-    
+    X_lstm[:,3:] = sc.fit_transform(X_lstm[:,3:])
     
     modelCont = 0
     highestAcc = 0
     while True:
         try:
-            results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
-            if results[modelCont]['is_neural_network']:
-                results[modelCont]['pred'] = (results[modelCont]['pred'] > 0.5)
-            results[modelCont]['acc_test'] = accuracy_score(y, results[modelCont]['pred'])
+            if results[modelCont]['model'] == 'LSTM':
+                features_lstm, labels_lstm, info_lstm = parse_lstm_data(X_lstm, y_lstm)
+                features_lstm[:,3:] = np.array(features_lstm[:,3:]).astype(np.float32)
+                labels_lstm = np.array(labels_lstm).astype(np.float32)
+                results[modelCont]['pred'] = results[modelCont]['classifier'].predict(features_lstm[:,3:])
+                results[modelCont]['pred_winner'] = (results[modelCont]['pred'] > 0.5)
+                results[modelCont]['acc_test'] = accuracy_score(labels_lstm, results[modelCont]['pred'])
+            else:
+                results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
+                if results[modelCont]['model'] == 'ANN':
+                    results[modelCont]['pred'] = (results[modelCont]['pred'] > 0.5)
+                results[modelCont]['acc_test'] = accuracy_score(y, results[modelCont]['pred'])
             if results[modelCont]['acc_test'] > highestAcc:
                 y_pred = results[modelCont]['pred']
                 highestAcc = results[modelCont]['acc_test']
@@ -312,18 +323,19 @@ if __name__ == "__main__":
     print(cm)
     print(acc_score)
     
+    print("\nGetting data for visualization...")
     profit = 0
     money_by_date = []
     bets_tracking_matchups = [0]
     bets_tracking_odds = [0]
     money_by_team = dict()
     bets = []
-    money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results], [0 for x in results])),  dict(zip([x['model'] for x in results], [0 for x in results]))])
+    money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM'])),  dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM']))])
     for index, game in dataset.iterrows():
         if game['GAME_DATE'] != money_by_date[-1][0]:    
             bets_tracking_matchups.append(bets_tracking_matchups[-1])
             bets_tracking_odds.append(bets_tracking_odds[-1])
-            money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results], [0 for x in results])), dict(money_by_date[-1][2])])
+            money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM'])), dict(money_by_date[-1][2])])
         
         game_money = 0
         if y_prob[index,0] >= y_prob[index,1]:
@@ -357,9 +369,29 @@ if __name__ == "__main__":
         bets_tracking_odds[-1] += check_game_with_odds(game, bet_value)
         
         for model in money_by_date[-1][1]:
-            game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
-            money_by_date[-1][1][model] += game_money_model
-            money_by_date[-1][2][model] += game_money_model
+            if model == 'LSTM':
+                game_lstm = dataset_lstm.iloc[[index*2-1], :].iloc[0]            
+                game_lstm['ODDS_B'] = game_lstm['ODDS_OPP']
+                game_money_model = check_model_performance_on_game(game_lstm, next(x['pred'][index*2-1] for x in results if x['model'] == model), bet_value)
+                money_by_date[-1][1][model] += game_money_model
+                money_by_date[-1][2][model] += game_money_model
+            else:
+                game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
+                money_by_date[-1][1][model] += game_money_model
+                money_by_date[-1][2][model] += game_money_model
+               
+    money_by_date_lstm = []
+    pred_proba_lstm = [x['pred'] for x in results if x['model'] == 'LSTM'][0]
+    pred_winner_lstm = [x['pred_winner'] for x in results if x['model'] == 'LSTM'][0]
+    money_by_date_lstm.append([info_lstm[0,0], 0, 0]) 
+    for i in range(1, info_lstm):
+        if info_lstm[i,0] == money_by_date_lstm[-1][0]:
+            money_by_date_lstm.append([info_lstm[i,0]], 0, money_by_date_lstm[-1][2]]) 
+        game_money_model = check_model_performance_on_game(info_lstm[i,:], next(x['pred'][index*2-1] for x in results if x['model'] == model), bet_value)
+            
+        
+                
+    
             
     models_tracking =  [np.array([x[2][model] for x in money_by_date], dtype=np.float32) for model in money_by_date[-1][1]]
         

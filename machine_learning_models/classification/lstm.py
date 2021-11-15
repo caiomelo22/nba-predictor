@@ -14,29 +14,19 @@ import matplotlib.pyplot as plt
 import keras
 import os.path
 
-def lstm(season = '2018-2018'):
-
-    " Importing the dataset "
+def parse_lstm_data(X, y, timesteps=10):
+    tracking = []
+    info_tracking = []
+    features = []
+    labels = []
     
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, '../../data/seasons/winner/LSTM/{}.csv'.format(season))
-    dataset = pd.read_csv(path)
-    dataset['DATE'] = pd.to_datetime(dataset['DATE'])
-    X = dataset.iloc[:, 1:-1].values
-    y = dataset.iloc[:, -1].values
-    timesteps = 10
+    info = np.concatenate((X[:,[2]], X[:,-2:]), axis = 1)
     
     " Feature Scaling "
-    
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X[:,3:] = sc.fit_transform(X[:,3:])
     
-    " Splitting the dataset into the Training set and Test set "
-    
-    tracking = []
-    features = []
-    labels = []
     # print('Parsing the data to LSTM format...')
     for i in range(2, len(X), 2):
         team_a_id = X[i-2,1]
@@ -51,8 +41,25 @@ def lstm(season = '2018-2018'):
             game = np.concatenate((team_a_previous_games[-1*timesteps:, 3:], team_b_previous_games[-1*timesteps:, 3:]), axis = 1)
             tracking.append(game_tracking)
             features.append(game)
+            info_tracking.append(info[i-2,:])
             labels.append(y[i-2])
-        
+    return features, labels, info_tracking
+    
+
+def lstm(season = '2018-2018'):
+
+    " Importing the dataset "
+    
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(my_path, '../../data/seasons/winner/LSTM/{}.csv'.format(season))
+    dataset = pd.read_csv(path)
+    dataset['DATE'] = pd.to_datetime(dataset['DATE'])
+    X = dataset.iloc[:, 1:-1].values
+    y = dataset.iloc[:, -1].values
+    
+    " Splitting the dataset into the Training set and Test set "
+    
+    features, labels, info = parse_lstm_data(X, y)
     
     from sklearn.model_selection import train_test_split
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
