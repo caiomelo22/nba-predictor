@@ -193,9 +193,9 @@ if __name__ == "__main__":
             pickle.dump(res, file)
     results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2]))
     
-    # print('Executing the Artificial Neural Network model...')
-    # res = ann(season)
-    # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
+    print('Executing the Artificial Neural Network model...')
+    res = load_neural_net("ANN", ann)
+    results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
     
     print('Executing the LSTM model...')
     res = load_neural_net("LSTM", lstm)
@@ -234,13 +234,6 @@ if __name__ == "__main__":
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
     results_regression.append(dict(model='Random Forest Regression',r2_score=res[0], m2_error=res[1], regressor=res[2]))
-    
-    # print('Executing the ANN Regression model...')
-    # res = ann_regression(season)
-    # results_regression.append(dict(model='ANN Regression',r2_score=res[0], m2_error=res[1]))
-    # print('Executing the LSTM Regression model...')
-    # res = lstm_regression(season)
-    # results_regression.append(dict(model='LSTM Regression',r2_score=res[0], m2_error=res[1]))
     
     matchups_baseline = dataset_train[((dataset_train['MATCHUP_A'] >= dataset_train['MATCHUP_B']) & (dataset_train['WINNER'] == 1)) | 
                        ((dataset_train['MATCHUP_B'] > dataset_train['MATCHUP_A']) & (dataset_train['WINNER'] == 0))]
