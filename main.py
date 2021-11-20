@@ -25,8 +25,10 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import matplotlib.dates as mdates
 from sklearn.metrics import confusion_matrix, accuracy_score
+from keras.models import model_from_json
 
 import pickle
+import dill
 
 threshold = 1.75
 
@@ -78,7 +80,18 @@ def check_game_with_matchups(game, bet_value):
             game_money = -bet_value
     return game_money
 
-def check_model_performance_on_game(game, prediction, bet_value):
+def check_model_performance_on_game_lstm(game, prediction, bet_value):
+    game_money = 0
+    if (prediction == 1 and game[1] > threshold) or (prediction == 0 and game[2] > threshold):
+        if game[3] == prediction and game[3] == 1:
+            game_money = (bet_value*game[1] - bet_value)
+        elif game[3] == prediction and game[3] == 0:
+            game_money = (bet_value*game[2] - bet_value)
+        else:
+            game_money = -bet_value
+    return game_money
+
+def check_model_performance_on_game(game_lstm, prediction, bet_value):
     game_money = 0
     if (prediction == 1 and game['ODDS_A'] > threshold) or (prediction == 0 and game['ODDS_B'] > threshold):
         if game['WINNER'] == prediction and game['WINNER'] == 1:
@@ -88,6 +101,30 @@ def check_model_performance_on_game(game, prediction, bet_value):
         else:
             game_money = -bet_value
     return game_money
+
+def load_neural_net(model_name, model):
+    try:
+        # load json and create model
+        json_file = open('models/{}.json'.format(model_name), 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        with open("models/{}.pkl".format(model_name), 'rb') as file:  
+            res = list(pickle.load(file))
+        res.append(model_from_json(loaded_model_json))
+        # load weights into new model
+        res[2].load_weights("models/{}.h5".format(model_name))
+    except:
+        res = model(season)
+        # serialize model to JSON
+        model_json = res[2].to_json()
+        with open("models/{}.pkl".format(model_name), 'wb') as file:  
+            pickle.dump(res[:2], file)
+        with open("models/{}.json".format(model_name), "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        res[2].save_weights("models/{}.h5".format(model_name))
+    return res
+    
 
 if __name__ == "__main__":
     season = '2008-2017'
@@ -161,7 +198,7 @@ if __name__ == "__main__":
     # results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
     
     print('Executing the LSTM model...')
-    res = lstm(season)
+    res = load_neural_net("LSTM", lstm)
     results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
     
     results_regression = []
@@ -268,7 +305,6 @@ if __name__ == "__main__":
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler()
     X_transformed = sc.fit_transform(X)
-    X_lstm[:,3:] = sc.fit_transform(X_lstm[:,3:])
     
     modelCont = 0
     highestAcc = 0
@@ -276,11 +312,14 @@ if __name__ == "__main__":
         try:
             if results[modelCont]['model'] == 'LSTM':
                 features_lstm, labels_lstm, info_lstm = parse_lstm_data(X_lstm, y_lstm)
-                features_lstm[:,3:] = np.array(features_lstm[:,3:]).astype(np.float32)
+                features_lstm = np.array(features_lstm).astype(np.float32)
                 labels_lstm = np.array(labels_lstm).astype(np.float32)
-                results[modelCont]['pred'] = results[modelCont]['classifier'].predict(features_lstm[:,3:])
-                results[modelCont]['pred_winner'] = (results[modelCont]['pred'] > 0.5)
-                results[modelCont]['acc_test'] = accuracy_score(labels_lstm, results[modelCont]['pred'])
+                pred = results[modelCont]['classifier'].predict(features_lstm)
+                results[modelCont]['pred'] = pred
+                pred_winner = (results[modelCont]['pred'] > 0.5)
+                # pred_winner = np.array(pred_winner).astype(np.float32)
+                results[modelCont]['pred_winner'] = pred_winner
+                results[modelCont]['acc_test'] = accuracy_score(labels_lstm, results[modelCont]['pred_winner'])
             else:
                 results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
                 if results[modelCont]['model'] == 'ANN':
@@ -323,7 +362,7 @@ if __name__ == "__main__":
     print(cm)
     print(acc_score)
     
-    print("\nGetting data for visualization...")
+    print("\nGetting data from the regular models for visualization...")
     profit = 0
     money_by_date = []
     bets_tracking_matchups = [0]
@@ -369,33 +408,39 @@ if __name__ == "__main__":
         bets_tracking_odds[-1] += check_game_with_odds(game, bet_value)
         
         for model in money_by_date[-1][1]:
-            if model == 'LSTM':
-                game_lstm = dataset_lstm.iloc[[index*2-1], :].iloc[0]            
-                game_lstm['ODDS_B'] = game_lstm['ODDS_OPP']
-                game_money_model = check_model_performance_on_game(game_lstm, next(x['pred'][index*2-1] for x in results if x['model'] == model), bet_value)
-                money_by_date[-1][1][model] += game_money_model
-                money_by_date[-1][2][model] += game_money_model
-            else:
-                game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
-                money_by_date[-1][1][model] += game_money_model
-                money_by_date[-1][2][model] += game_money_model
-               
+            game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
+            money_by_date[-1][1][model] += game_money_model
+            money_by_date[-1][2][model] += game_money_model
+            
+    print("\nGetting data from the LSTM model for visualization...")   
     money_by_date_lstm = []
     pred_proba_lstm = [x['pred'] for x in results if x['model'] == 'LSTM'][0]
     pred_winner_lstm = [x['pred_winner'] for x in results if x['model'] == 'LSTM'][0]
-    money_by_date_lstm.append([info_lstm[0,0], 0, 0]) 
-    for i in range(1, info_lstm):
-        if info_lstm[i,0] == money_by_date_lstm[-1][0]:
-            money_by_date_lstm.append([info_lstm[i,0]], 0, money_by_date_lstm[-1][2]]) 
-        game_money_model = check_model_performance_on_game(info_lstm[i,:], next(x['pred'][index*2-1] for x in results if x['model'] == model), bet_value)
-            
-        
-                
     
+    money_by_date_lstm.append([info_lstm[0][0], 0, 0]) 
+    for i in range(len(info_lstm)):
+        if info_lstm[i][0] != money_by_date_lstm[-1][0]:
+            money_by_date_lstm.append([info_lstm[i][0], 0, money_by_date_lstm[-1][2]]) 
+            
+        if pred_winner_lstm[i]:
+            bet_value = 10*pred_proba_lstm[i]
+        else:
+            bet_value = 10*(1-pred_proba_lstm[i])
+            
+        game_money_model = check_model_performance_on_game_lstm(info_lstm[i], pred_winner_lstm[i], bet_value)
+        if game_money_model != 0:
+            money_by_date_lstm[-1][1] += game_money_model[0]
+            money_by_date_lstm[-1][2] += game_money_model[0]
+            
+    
+    print('\nProfit:', profit)
+    
+    print('\nPlotting charts...')
             
     models_tracking =  [np.array([x[2][model] for x in money_by_date], dtype=np.float32) for model in money_by_date[-1][1]]
         
     money_by_date = np.array(money_by_date, dtype=str)
+    money_by_date_lstm = np.array(money_by_date_lstm, dtype=str)
     correct_bets = list(filter(lambda x: x[3] == 1, bets))
     missed_bets = list(filter(lambda x: x[3] == 0, bets))
     correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
@@ -408,10 +453,6 @@ if __name__ == "__main__":
     money_by_team = dict(sorted(money_by_team.items(), key=lambda x: x[1]))
     money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
     money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
-    
-    print('\nProfit:', profit)
-    
-    print('\nPlotting charts...')
     
     plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
     
@@ -441,5 +482,18 @@ if __name__ == "__main__":
     plt.ylabel("Profit($)")
     plt.xlabel("Date")
     plt.title("Profit by Date")
+    plt.gcf().autofmt_xdate()
+    plt.show()
+    
+    xpoints = money_by_date_lstm[:,0].astype(np.datetime64)
+    ypoints = money_by_date_lstm[:,2].astype(np.float32)
+    
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
+    plt.plot(xpoints, ypoints)
+    
+    plt.ylabel("Profit($)")
+    plt.xlabel("Date")
+    plt.title("Profit by Date - LSTM")
     plt.gcf().autofmt_xdate()
     plt.show()

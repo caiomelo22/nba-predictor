@@ -21,6 +21,7 @@ def parse_lstm_data(X, y, timesteps=10):
     labels = []
     
     info = np.concatenate((X[:,[2]], X[:,-2:]), axis = 1)
+    info = np.c_[ info[:,:], y ]  
     
     " Feature Scaling "
     from sklearn.preprocessing import StandardScaler
