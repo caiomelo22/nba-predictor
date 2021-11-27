@@ -6,9 +6,9 @@ Created on Tue Oct 12 15:59:07 2021
 """
 import initialize
 from logistic_regression import logistic_regression
-from artificial_neural_network import ann
+from artificial_neural_network import ann_no_validation
 from kernel_svm import kernel_svm
-from lstm import lstm, parse_lstm_data
+from lstm import lstm_no_validation, parse_lstm_data
 from naive_bayes import naive_bayes
 from random_forest import random_forest
 
@@ -36,6 +36,7 @@ def plot_chart(title, x_label, y_label):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     plt.title(title)
+    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()
 
 def plot_hist(title, x_label, y_label, data):
@@ -53,6 +54,7 @@ def plot_pie_chart(title, labels, data):
     data_converted = np.unique(data, return_counts=True)[1]
     plt.pie(data_converted, labels = labels, startangle = 90, shadow = True, autopct='%.2f%%')
     plt.title(title)
+    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show() 
     
 
@@ -108,21 +110,17 @@ def load_neural_net(model_name, model):
         json_file = open('models/{}.json'.format(model_name), 'r')
         loaded_model_json = json_file.read()
         json_file.close()
-        with open("models/{}.pkl".format(model_name), 'rb') as file:  
-            res = list(pickle.load(file))
-        res.append(model_from_json(loaded_model_json))
+        res = model_from_json(loaded_model_json)
         # load weights into new model
-        res[2].load_weights("models/{}.h5".format(model_name))
+        res.load_weights("models/{}.h5".format(model_name))
     except:
-        res = model(season)
+        res = model(season)[0]
         # serialize model to JSON
-        model_json = res[2].to_json()
-        with open("models/{}.pkl".format(model_name), 'wb') as file:  
-            pickle.dump(res[:2], file)
+        model_json = res.to_json()
         with open("models/{}.json".format(model_name), "w") as json_file:
             json_file.write(model_json)
         # serialize weights to HDF5
-        res[2].save_weights("models/{}.h5".format(model_name))
+        res.save_weights("models/{}.h5".format(model_name))
     return res
     
 
@@ -155,7 +153,7 @@ if __name__ == "__main__":
         with open(Pkl_Filename, 'rb') as file:  
             logisticRegression = pickle.load(file)
     except:
-        logisticRegression = logistic_regression(season)
+        logisticRegression = logistic_regression(season, True)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(logisticRegression, file)
     results.append(dict(model='logistic Regression',cm=logisticRegression[0], acc=logisticRegression[1], classifier=logisticRegression[2]))
@@ -166,7 +164,7 @@ if __name__ == "__main__":
         with open(Pkl_Filename, 'rb') as file:  
             res = pickle.load(file)
     except:
-        res = kernel_svm(season)
+        res = kernel_svm(season, True)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
     results.append(dict(model='Kernel SVM',cm=res[0], acc=res[1], classifier=res[2]))
@@ -177,7 +175,7 @@ if __name__ == "__main__":
         with open(Pkl_Filename, 'rb') as file:  
             res = pickle.load(file)
     except:
-        res = naive_bayes(season)
+        res = naive_bayes(season, True)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
     results.append(dict(model='Naive Bayes',cm=res[0], acc=res[1], classifier=res[2]))
@@ -188,18 +186,18 @@ if __name__ == "__main__":
         with open(Pkl_Filename, 'rb') as file:  
             res = pickle.load(file)
     except:
-        res = random_forest(season)
+        res = random_forest(season, True)
         with open(Pkl_Filename, 'wb') as file:  
             pickle.dump(res, file)
     results.append(dict(model='Random Forest',cm=res[0], acc=res[1], classifier=res[2]))
     
     print('Executing the Artificial Neural Network model...')
-    res = load_neural_net("ANN", ann)
-    results.append(dict(model='ANN',cm=res[0], acc=res[1], classifier=res[2]))
+    res = load_neural_net("ANN", ann_no_validation)
+    results.append(dict(model='ANN', classifier=res))
     
     print('Executing the LSTM model...')
-    res = load_neural_net("LSTM", lstm)
-    results.append(dict(model='LSTM',cm=res[0], acc=res[1], classifier=res[2]))
+    res = load_neural_net("LSTM", lstm_no_validation)
+    results.append(dict(model='LSTM', classifier=res))
     
     results_regression = []
     print('Executing the Multiple Linear Regression model...')
@@ -240,15 +238,15 @@ if __name__ == "__main__":
     odds_baseline = dataset_train[((dataset_train['ODDS_A'] <= dataset_train['ODDS_B']) & (dataset_train['WINNER'] == 1)) | 
                        ((dataset_train['ODDS_B'] < dataset_train['ODDS_A']) & (dataset_train['WINNER'] == 0))]
     
-    print('\nResults Classification ({}):'.format(season))
-    results.sort(key=lambda x: x['acc'], reverse=True)
-    [print('{}:\t{:.4f}'.format(x['model'], x['acc'])) for x in results]
-    print('Baseline Last Machups:\t{:.4f}'.format(100*len(matchups_baseline.index)/len(dataset_train.index)))
-    print('Baseline Odds:\t{:.4f}'.format(100*len(odds_baseline.index)/len(dataset_train.index)))
+    # print('\nResults Classification ({}):'.format(season))
+    # results.sort(key=lambda x: x['acc'], reverse=True)
+    # [print('{}:\t{:.4f}'.format(x['model'], x['acc'])) for x in results]
+    # print('Baseline Last Machups:\t{:.4f}'.format(100*len(matchups_baseline.index)/len(dataset_train.index)))
+    # print('Baseline Odds:\t{:.4f}'.format(100*len(odds_baseline.index)/len(dataset_train.index)))
     
-    print('\nResults Regression ({}):'.format(season))
-    results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
-    [print('{}:\t{:.4f}'.format(x['model'], x['r2_score'])) for x in results_regression]
+    # print('\nResults Regression ({}):'.format(season))
+    # results_regression.sort(key=lambda x: x['r2_score'], reverse=True)
+    # [print('{}:\t{:.4f}'.format(x['model'], x['r2_score'])) for x in results_regression]
     
     print('\nGetting the feature correlation matrix...')
     
@@ -259,9 +257,12 @@ if __name__ == "__main__":
         corrmat = dependent_variables.corr()
         top_corr_features = corrmat.index
         plt.figure(figsize=(13,13))
+        title = 'Feature Correlation'
+        plt.title(title)
         #plot heat map
         sns.set(font_scale=0.6)
         g=sns.heatmap(dependent_variables.corr(),annot=True,cmap='Blues', fmt='0.1g')
+        plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
         plt.show()
     except:
         print('No correlation matrix for the selected model.')
@@ -305,8 +306,6 @@ if __name__ == "__main__":
         try:
             if results[modelCont]['model'] == 'LSTM':
                 features_lstm, labels_lstm, info_lstm = parse_lstm_data(X_lstm, y_lstm)
-                features_lstm = np.array(features_lstm).astype(np.float32)
-                labels_lstm = np.array(labels_lstm).astype(np.float32)
                 pred = results[modelCont]['classifier'].predict(features_lstm)
                 results[modelCont]['pred'] = pred
                 pred_winner = (results[modelCont]['pred'] > 0.5)
@@ -362,12 +361,14 @@ if __name__ == "__main__":
     bets_tracking_odds = [0]
     money_by_team = dict()
     bets = []
-    money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM'])),  dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM']))])
+    index_lstm = 0
+    pred_winner_lstm = [x['pred_winner'] for x in results if x['model'] == 'LSTM'][0]
+    money_by_date.append([dataset.iloc[0,2], dict(zip([x['model'] for x in results], [0 for x in results])),  dict(zip([x['model'] for x in results], [0 for x in results]))])
     for index, game in dataset.iterrows():
         if game['GAME_DATE'] != money_by_date[-1][0]:    
             bets_tracking_matchups.append(bets_tracking_matchups[-1])
             bets_tracking_odds.append(bets_tracking_odds[-1])
-            money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results if x['model'] != 'LSTM'], [0 for x in results if x['model'] != 'LSTM'])), dict(money_by_date[-1][2])])
+            money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results], [0 for x in results])), dict(money_by_date[-1][2])])
         
         game_money = 0
         if y_prob[index,0] >= y_prob[index,1]:
@@ -401,29 +402,18 @@ if __name__ == "__main__":
         bets_tracking_odds[-1] += check_game_with_odds(game, bet_value)
         
         for model in money_by_date[-1][1]:
-            game_money_model = check_model_performance_on_game(game, next(x['pred'][index] for x in results if x['model'] == model), bet_value)
+            if model == 'LSTM':
+                if index_lstm < len(info_lstm) and info_lstm[index_lstm][0] == money_by_date[-1][0]:
+                    prediction = pred_winner_lstm[index_lstm]
+                    game_money_model = check_model_performance_on_game_lstm(info_lstm[index_lstm], prediction, bet_value)
+                    index_lstm += 1
+                else:
+                    game_money_model = 0
+            else:
+                prediction = next(x['pred'][index] for x in results if x['model'] == model)
+                game_money_model = check_model_performance_on_game(game, prediction, bet_value)
             money_by_date[-1][1][model] += game_money_model
             money_by_date[-1][2][model] += game_money_model
-            
-    print("\nGetting data from the LSTM model for visualization...")   
-    money_by_date_lstm = []
-    pred_proba_lstm = [x['pred'] for x in results if x['model'] == 'LSTM'][0]
-    pred_winner_lstm = [x['pred_winner'] for x in results if x['model'] == 'LSTM'][0]
-    
-    money_by_date_lstm.append([info_lstm[0][0], 0, 0]) 
-    for i in range(len(info_lstm)):
-        if info_lstm[i][0] != money_by_date_lstm[-1][0]:
-            money_by_date_lstm.append([info_lstm[i][0], 0, money_by_date_lstm[-1][2]]) 
-            
-        if pred_winner_lstm[i]:
-            bet_value = 10*pred_proba_lstm[i]
-        else:
-            bet_value = 10*(1-pred_proba_lstm[i])
-            
-        game_money_model = check_model_performance_on_game_lstm(info_lstm[i], pred_winner_lstm[i], bet_value)
-        if game_money_model != 0:
-            money_by_date_lstm[-1][1] += game_money_model[0]
-            money_by_date_lstm[-1][2] += game_money_model[0]
             
     
     print('\nProfit:', profit)
@@ -433,7 +423,6 @@ if __name__ == "__main__":
     models_tracking =  [np.array([x[2][model] for x in money_by_date], dtype=np.float32) for model in money_by_date[-1][1]]
         
     money_by_date = np.array(money_by_date, dtype=str)
-    money_by_date_lstm = np.array(money_by_date_lstm, dtype=str)
     correct_bets = list(filter(lambda x: x[3] == 1, bets))
     missed_bets = list(filter(lambda x: x[3] == 0, bets))
     correct_bets_odds = np.array(list(map(lambda x: x[1], correct_bets)))
@@ -447,19 +436,19 @@ if __name__ == "__main__":
     money_by_team_labels = np.array(list(money_by_team.keys()), dtype=str)
     money_by_team_values = np.array(list(money_by_team.values()), dtype=np.float32)
     
-    plot_hist('Missed Bets', 'Odds', 'X Times', missed_bets_odds)
+    plot_hist('Missed Bets by Odds', 'Odds', 'X Times', missed_bets_odds)
     
-    plot_hist('Correct Bets', 'Odds', 'X Times', correct_bets_odds)
+    plot_hist('Correct Bets by Odds', 'Odds', 'X Times', correct_bets_odds)
     
     # plot_hist('Correct Bets', 'Probability', 'X Times', correct_bets_prob)
     
     # plot_hist('Missed Bets', 'Probability', 'X Times', missed_bets_prob)
     
-    plot_pie_chart('Correct Bets', ['Home', 'Away'], correct_bets_home)
+    plot_pie_chart('Correct Bets by Home-Away', ['Home', 'Away'], correct_bets_home)
     
-    plot_pie_chart('Missed Bets', ['Home', 'Away'], missed_bets_home)
+    plot_pie_chart('Missed Bets by Home-Away', ['Home', 'Away'], missed_bets_home)
     
-    plot_bar('Profit By Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
+    plot_bar('Profit by Team', 'Teams', 'Profit', money_by_team_labels, money_by_team_values)
     
     xpoints = money_by_date[:,0].astype(np.datetime64)
     # ypoints = money_by_date[:,2].astype(np.float32)
@@ -471,22 +460,11 @@ if __name__ == "__main__":
     plt.plot(xpoints, bets_tracking_matchups)
     plt.plot(xpoints, bets_tracking_odds)
     
+    title = "Profit by Date"
     plt.legend([x['model'] for x in results] + ['Matchups Baseline', 'Odds Baseline'], loc='lower left')
     plt.ylabel("Profit($)")
     plt.xlabel("Date")
-    plt.title("Profit by Date")
+    plt.title(title)
     plt.gcf().autofmt_xdate()
-    plt.show()
-    
-    xpoints = money_by_date_lstm[:,0].astype(np.datetime64)
-    ypoints = money_by_date_lstm[:,2].astype(np.float32)
-    
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=15))
-    plt.plot(xpoints, ypoints)
-    
-    plt.ylabel("Profit($)")
-    plt.xlabel("Date")
-    plt.title("Profit by Date - LSTM")
-    plt.gcf().autofmt_xdate()
+    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()

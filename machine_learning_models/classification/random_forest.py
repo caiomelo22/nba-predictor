@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import cross_val_score
 import import_data_helper as idh
 
-def random_forest(season = '2017-2017'):
+def random_forest(season = '2018-2018', no_test = False):
     " Importing the dataset "
     
     dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
@@ -71,6 +71,11 @@ def random_forest(season = '2017-2017'):
     # print("Feature importance")
     feat_importances = pd.Series(classifier.feature_importances_, index=dataset.iloc[:, 5:-1].columns)
     feat_importances.nlargest(30).plot(kind='barh')
+    title = 'Feature Importance'
+    plt.ylabel('Features')
+    plt.xlabel("Feature Importance")
+    plt.title(title)
+    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()
     
     # " Feature Correlation "
@@ -105,25 +110,16 @@ def random_forest(season = '2017-2017'):
     # print('LAL x NYK', classifier.predict_proba(sc.transform([[105.5, 109.6, 0.45490000000000014, 0.3389, 0.7090000000000001, 42.0, 14.1, 6.1, 0.5588235294117647, 0.3, 1533.0816400885722, 1, 113.7, 108.1, 0.4891, 0.4471, 0.8347999999999999, 41.9, 12.0, 5.1, 0.5588235294117647, 0.8, 1585.6510310862843, 1]])))
     # print('SAC x OKC', classifier.predict_proba(sc.transform([[111.7, 111.0, 0.49499999999999994, 0.381, 0.7786, 39.8, 14.8, 5.5, 0.4411764705882353, 0.5, 1454.69152221966, 1, 101.9, 123.2, 0.41229999999999994, 0.2972, 0.6943999999999999, 45.2, 17.2, 3.1, 0.30434782608695654, 0, 1253.1531691380874, -7]])))
     
-    " Predicting the Test set results "
-    
-    # print(classifier.predict_proba(X_test))
-    y_pred = classifier.predict(X_test)
-    # print(np.concatenate((y_pred.reshape(len(y_pred),1), y_test.reshape(len(y_test),1)),1))
-    
-    " Cross Validation Score "
-    
-    # print("Predictions for the test set with the cross validation score")
-    crossValScores = cross_val_score(classifier, X_test, y_test.ravel())
-    # print(mean(crossValScores), crossValScores)
-    
+    " Predicting the Test set results and"
     " Making the Confusion Matrix "
+    from sklearn.metrics import confusion_matrix, accuracy_score
+    cm = None
+    acc_score = None
     
-    # print("Predictions for the test set")
-    cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
-    acc_score = accuracy_score(y_test, y_pred)
-    # print(cm)
-    # print(acc_score)
+    if not no_test:
+        y_pred = classifier.predict(X_test)
+        cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
+        acc_score = accuracy_score(y_test, y_pred)
     
     return cm, acc_score, classifier
     

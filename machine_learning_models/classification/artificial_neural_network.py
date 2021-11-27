@@ -14,35 +14,10 @@ import matplotlib.pyplot as plt
 import keras
 import os.path
 
-def ann(season = '2017-2017'):
-
-    " Importing the dataset "
-    
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, '../../data/seasons/winner/{}.csv'.format(season))
-    dataset = pd.read_csv(path)
-    # dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
-    X = dataset.iloc[:, 5:-1].values
-    y = dataset.iloc[:, -1].values
-    
-    " Splitting the dataset into the Training set and Test set "
-    
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-    X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
-    
-    " Feature Scaling "
-    
-    from sklearn.preprocessing import StandardScaler
-    sc = StandardScaler()
-    X_train = sc.fit_transform(X_train)
-    X_test = sc.transform(X_test)
-    X_validation = sc.transform(X_validation)
-    
+def build_ann(X_train, y_train, X_test = None, y_test = None):
     " Building the ANN "
     
     ann = keras.Sequential([
-    
         # input layer
         tf.keras.layers.Dense(units=68, activation='relu', kernel_regularizer=keras.regularizers.l2(0.001)),
         keras.layers.Dropout(0.9),
@@ -60,7 +35,49 @@ def ann(season = '2017-2017'):
     
     " Training the ANN on the Training set "
     
-    history = ann.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
+    if X_test != None:
+        history = ann.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
+    else:
+        history = ann.fit(X_train, y_train, batch_size = 32, epochs = 100)
+    
+    return ann, history
+
+def import_dataset(season = '2018-2018'):
+    
+    " Importing the dataset "
+    
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(my_path, '../../data/seasons/winner/{}.csv'.format(season))
+    dataset = pd.read_csv(path)
+    # dataset['WINNER'] = dataset['WINNER'].map({'A': 1, 'B': 0})
+    X = dataset.iloc[:, 5:-1].values
+    y = dataset.iloc[:, -1].values
+    
+    return X,y
+
+def ann_no_validation(season = '2018-2018'):
+    X, y = import_dataset(season)
+    
+    return build_ann(X, y)
+
+def ann(season = '2017-2017'):
+    X, y = import_dataset(season)
+    
+    " Splitting the dataset into the Training set and Test set "
+    
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
+    
+    " Feature Scaling "
+    
+    from sklearn.preprocessing import StandardScaler
+    sc = StandardScaler()
+    X_train = sc.fit_transform(X_train)
+    X_test = sc.transform(X_test)
+    X_validation = sc.transform(X_validation)
+    
+    ann, history = build_ann(X_train, y_train, X_test, y_test)
     
     " Overfit check "
     

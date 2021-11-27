@@ -44,41 +44,17 @@ def parse_lstm_data(X, y, timesteps=10):
             features.append(game)
             info_tracking.append(info[i-2,:])
             labels.append(y[i-2])
+            
+    features = np.array(features).astype(np.float32)
+    labels = np.array(labels).astype(np.float32)
     return features, labels, info_tracking
-    
 
-def lstm(season = '2018-2018'):
-
-    " Importing the dataset "
-    
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, '../../data/seasons/winner/LSTM/{}.csv'.format(season))
-    dataset = pd.read_csv(path)
-    dataset['DATE'] = pd.to_datetime(dataset['DATE'])
-    X = dataset.iloc[:, 1:-1].values
-    y = dataset.iloc[:, -1].values
-    
-    " Splitting the dataset into the Training set and Test set "
-    
-    features, labels, info = parse_lstm_data(X, y)
-    
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
-    X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
-        
-    X_train = np.array(X_train).astype(np.float32)
-    X_test = np.array(X_test).astype(np.float32)
-    X_validation = np.array(X_validation).astype(np.float32)
-    
-    y_train = np.array(y_train).astype(np.float32)
-    y_test = np.array(y_test).astype(np.float32)
-    y_validation = np.array(y_validation).astype(np.float32)
-    
+def build_lstm(X_train, y_train, X_test = None, y_test = None):
     " Building the LSTM "
     
     lstm = keras.Sequential()
-    lstm.add(keras.layers.LSTM(1, input_shape=(X_train.shape[1], X_train.shape[2])))
-    lstm.add(keras.layers.Dropout(0.2))
+    lstm.add(keras.layers.LSTM(12, input_shape=(X_train.shape[1], X_train.shape[2])))
+    lstm.add(keras.layers.Dropout(0.9))
     
     # Output layer
     lstm.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
@@ -92,7 +68,49 @@ def lstm(season = '2018-2018'):
     
     " Training the LSTM on the Training set "
     
-    history = lstm.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
+    if X_test != None:
+        history = lstm.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size = 32, epochs = 100)
+    else:
+        history = lstm.fit(X_train, y_train, batch_size = 32, epochs = 100)
+        
+    return lstm, history
+
+def import_dataset(season = '2018-2018'):
+    
+    " Importing the dataset "
+    
+    my_path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(my_path, '../../data/seasons/winner/LSTM/{}.csv'.format(season))
+    dataset = pd.read_csv(path)
+    dataset['DATE'] = pd.to_datetime(dataset['DATE'])
+    X = dataset.iloc[:, 1:-1].values
+    y = dataset.iloc[:, -1].values
+    
+    return X,y
+    
+
+def lstm_no_validation(season = '2018-2018'):
+    X, y = import_dataset(season)
+    
+    features, labels, info = parse_lstm_data(X, y)
+    
+    lstm, history = build_lstm(features, labels)
+    
+    return lstm, history
+    
+
+def lstm(season = '2018-2018'):
+    X, y = import_dataset(season)
+    
+    " Splitting the dataset into the Training set and Test set "
+    
+    features, labels, info = parse_lstm_data(X, y)
+    
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25)
+    X_test, X_validation, y_test, y_validation = train_test_split(X_test, y_test, test_size=0.2)
+    
+    lstm, history = build_lstm(X_train, y_train, X_test, y_test)
     
     " Overfit check "
     
