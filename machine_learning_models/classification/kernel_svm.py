@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from statistics import mean
+from sklearn.calibration import CalibratedClassifierCV
 import import_data_helper as idh
 
 def kernel_svm(season = '2018-2018', no_test = False):
@@ -22,7 +23,7 @@ def kernel_svm(season = '2018-2018', no_test = False):
     " Training the model on the Training set "
     
     from sklearn.svm import SVC
-    classifier = SVC(kernel = 'rbf', random_state = 0)
+    classifier = SVC(kernel = 'rbf', random_state = 0, probability = True)
     classifier.fit(X_train, y_train.ravel())
     
     " Predicting a new result "

@@ -122,6 +122,14 @@ def load_neural_net(model_name, model):
         # serialize weights to HDF5
         res.save_weights("models/{}.h5".format(model_name))
     return res
+
+def get_bet_value(prob):
+    bet_value = 0 
+    if prob >= 0.5:
+        bet_value = 10*prob
+    else:
+        bet_value = 10*abs(1-prob)
+    return bet_value
     
 
 if __name__ == "__main__":
@@ -302,12 +310,14 @@ if __name__ == "__main__":
     
     modelCont = 0
     highestAcc = 0
+    probs = dict()
     while True:
         try:
             if results[modelCont]['model'] == 'LSTM':
                 features_lstm, labels_lstm, info_lstm = parse_lstm_data(X_lstm, y_lstm)
                 pred = results[modelCont]['classifier'].predict(features_lstm)
                 results[modelCont]['pred'] = pred
+                probs['LSTM'] =  pred
                 pred_winner = (results[modelCont]['pred'] > 0.5)
                 # pred_winner = np.array(pred_winner).astype(np.float32)
                 results[modelCont]['pred_winner'] = pred_winner
@@ -315,7 +325,10 @@ if __name__ == "__main__":
             else:
                 results[modelCont]['pred'] = results[modelCont]['classifier'].predict(X_transformed)
                 if results[modelCont]['model'] == 'ANN':
+                    probs['ANN'] =  results[modelCont]['pred']
                     results[modelCont]['pred'] = (results[modelCont]['pred'] > 0.5)
+                else:
+                    probs[results[modelCont]['model']] =  results[modelCont]['classifier'].predict_proba(X_transformed)
                 results[modelCont]['acc_test'] = accuracy_score(y, results[modelCont]['pred'])
             if results[modelCont]['acc_test'] > highestAcc:
                 y_pred = results[modelCont]['pred']
@@ -371,11 +384,7 @@ if __name__ == "__main__":
             money_by_date.append([game['GAME_DATE'],  dict(zip([x['model'] for x in results], [0 for x in results])), dict(money_by_date[-1][2])])
         
         game_money = 0
-        if y_prob[index,0] >= y_prob[index,1]:
-            bet_value = 10*y_prob[index,0]
-        else:
-            bet_value = 10*y_prob[index,1]
-        # bet_value = 10
+        bet_value = get_bet_value(y_prob[index,0])
         if (y_pred[index] == 1 and game['ODDS_A'] > threshold) or (y_pred[index] == 0 and game['ODDS_B'] > threshold):
             if game['TEAM_A'] not in money_by_team:
                 money_by_team[game['TEAM_A']] = 0
@@ -404,12 +413,14 @@ if __name__ == "__main__":
         for model in money_by_date[-1][1]:
             if model == 'LSTM':
                 if index_lstm < len(info_lstm) and info_lstm[index_lstm][0] == money_by_date[-1][0]:
+                    bet_value = get_bet_value(probs[model][index_lstm,0])
                     prediction = pred_winner_lstm[index_lstm]
                     game_money_model = check_model_performance_on_game_lstm(info_lstm[index_lstm], prediction, bet_value)
                     index_lstm += 1
                 else:
                     game_money_model = 0
             else:
+                bet_value = get_bet_value(probs[model][index,0])
                 prediction = next(x['pred'][index] for x in results if x['model'] == model)
                 game_money_model = check_model_performance_on_game(game, prediction, bet_value)
             money_by_date[-1][1][model] += game_money_model
