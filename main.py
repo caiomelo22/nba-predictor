@@ -36,7 +36,7 @@ def plot_chart(title, x_label, y_label):
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     plt.title(title)
-    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
+    plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()
 
 def plot_hist(title, x_label, y_label, data):
@@ -54,7 +54,7 @@ def plot_pie_chart(title, labels, data):
     data_converted = np.unique(data, return_counts=True)[1]
     plt.pie(data_converted, labels = labels, startangle = 90, shadow = True, autopct='%.2f%%')
     plt.title(title)
-    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
+    plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show() 
     
 
@@ -262,7 +262,7 @@ if __name__ == "__main__":
         #plot heat map
         sns.set(font_scale=0.6)
         g=sns.heatmap(dependent_variables.corr(),annot=True,cmap='Blues', fmt='0.1g')
-        plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
+        plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
         plt.show()
     except:
         print('No correlation matrix for the selected model.')
@@ -466,5 +466,5 @@ if __name__ == "__main__":
     plt.xlabel("Date")
     plt.title(title)
     plt.gcf().autofmt_xdate()
-    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
+    plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()

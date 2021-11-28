@@ -75,7 +75,7 @@ def random_forest(season = '2018-2018', no_test = False):
     plt.ylabel('Features')
     plt.xlabel("Feature Importance")
     plt.title(title)
-    plt.savefig('{}.png'.format(title.replace(' ','_').lower()), dpi=300)
+    plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()
     
     # " Feature Correlation "
