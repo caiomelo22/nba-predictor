@@ -311,8 +311,10 @@ if __name__ == "__main__":
     modelCont = 0
     highestAcc = 0
     probs = dict()
+    total_invested = dict()
     while True:
         try:
+            total_invested[results[modelCont]['model']] = 0
             if results[modelCont]['model'] == 'LSTM':
                 features_lstm, labels_lstm, info_lstm = parse_lstm_data(X_lstm, y_lstm)
                 pred = results[modelCont]['classifier'].predict(features_lstm)
@@ -423,11 +425,17 @@ if __name__ == "__main__":
                 bet_value = get_bet_value(probs[model][index,0])
                 prediction = next(x['pred'][index] for x in results if x['model'] == model)
                 game_money_model = check_model_performance_on_game(game, prediction, bet_value)
+            if game_money_model != 0:
+                total_invested[model] += bet_value
             money_by_date[-1][1][model] += game_money_model
             money_by_date[-1][2][model] += game_money_model
             
     
-    print('\nProfit:', profit)
+    print('\nProfit and margin by model...')
+    for model in money_by_date[-1][1]:
+        print('Model: {} \t// Invested: {} \t// Won: {} \t// Margin: {:.2f}%'.format(model, total_invested[model], money_by_date[-1][2][model], 100*money_by_date[-1][2][model]/total_invested[model]))
+        
+    
     
     print('\nPlotting charts...')
             
