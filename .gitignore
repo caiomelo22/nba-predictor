@@ -9,6 +9,7 @@
 *.userosscache
 *.orig
 *.sln.docstates
+.ipynb_checkpoints
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
