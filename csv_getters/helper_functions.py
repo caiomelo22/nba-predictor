@@ -130,25 +130,9 @@ def get_wl_pct (previous_games):
         return win_pct, loss_pct
     return 0, 0
     
-def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, ha_percentage, streak, matchups_pct, elo, per, odds):
+def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, elo, per, odds):
     return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
                         previous_games['FT_PCT'].mean(), previous_games['REB'].mean(), previous_games['TOV'].mean(),
-                        previous_games['BLK'].mean(), season_pct, ha_percentage, elo, streak, matchups_pct, per, odds]
-    
+                        season_pct, elo, per, odds]
 
-
-# In[ ]:
-
-
-def get_team_stats_regression (previous_games, previous_games_pts_conceded, season_games, elo, per, ha_previous_games, ha_previous_games_pts_conceded):
-    if(ha_previous_games['PTS'].mean() == None):
-        exit()
-    return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FT_PCT'].mean(), previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
-            elo, per, ha_previous_games['PTS'].mean(), ha_previous_games_pts_conceded, season_games['PTS'].mean()]
-
-
-# In[ ]:
-
-
-dataset = load_bets_csv()
 
