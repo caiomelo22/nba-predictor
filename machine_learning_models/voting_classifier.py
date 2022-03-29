@@ -11,15 +11,15 @@ import import_data_helper as idh
 # In[2]:
 
 
-def logistic_regression(season = '2018-2018', no_test = False):
+def voting_classifier(estimators, weights = [2,1,1,1], season = '2018-2018', no_test = False):
     " Importing the dataset "
     
     dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season, no_test)
     
-    " Training the Logistic Regression model on the Training set "
+    " Training the Voting Classifier model on the Training set "
     
-    from sklearn.linear_model import LogisticRegression
-    classifier = LogisticRegression(random_state = 0)
+    from sklearn.ensemble import VotingClassifier
+    classifier = VotingClassifier(estimators=estimators, voting='soft', weights=weights)
     classifier.fit(X_train, y_train.ravel())
     
     " Predicting a new result "

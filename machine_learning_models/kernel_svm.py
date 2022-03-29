@@ -18,7 +18,7 @@ import import_data_helper as idh
 def kernel_svm(season = '2018-2018', no_test = False):
     " Importing the dataset "
     
-    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
+    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season, no_test)
     
     " Training the model on the Training set "
     

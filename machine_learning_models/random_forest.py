@@ -59,7 +59,7 @@ def random_search_cv(classifier, X_train, y_train, X_test, y_test):
 def random_forest(season = '2018-2018', no_test = False, random_search = False):
     " Importing the dataset "
     
-    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season)
+    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season, no_test)
     
     " Training the model on the Training set "
     
