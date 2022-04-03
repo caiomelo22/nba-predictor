@@ -103,7 +103,6 @@ def load_bets_csv():
 def get_teams_odds(team_a_id, team_b_id, game_date, season_odds):
     try:
         game = season_odds[(season_odds['TEAM_A_ID'] == team_a_id) & (season_odds['TEAM_B_ID'] == team_b_id) & (game_date <= season_odds['GAME_DATE']) & ((game_date + timedelta(days=2)) >= season_odds['GAME_DATE'])].iloc[0]
-        # game = next(filter(lambda x: game_date.date() <= x['date'].date() and (game_date.date() + timedelta(days=2)) >= x['date'].date() and x['team_a_id'] == team_a_id and x['team_b_id'] == team_b_id, season_odds))
         return float(game['TEAM_A_ODDS']), float(game['TEAM_B_ODDS'])
     except IndexError:
         return None, None
@@ -130,9 +129,9 @@ def get_wl_pct (previous_games):
         return win_pct, loss_pct
     return 0, 0
     
-def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, elo, per, odds):
+def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, per, odds, elo):
     return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
                         previous_games['FT_PCT'].mean(), previous_games['REB'].mean(), previous_games['TOV'].mean(),
-                        season_pct, elo, per, odds]
+                        season_pct, per, odds, elo]
 
 
