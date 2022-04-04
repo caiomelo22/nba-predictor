@@ -56,10 +56,10 @@ def random_search_cv(classifier, X_train, y_train, X_test, y_test):
 # In[ ]:
 
 
-def random_forest(season = '2018-2018', no_test = False, random_search = False):
+def random_forest(dataset, includes_test = False, random_search = False):
     " Importing the dataset "
     
-    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season, no_test)
+    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(dataset, includes_test)
     
     " Training the model on the Training set "
     
@@ -85,24 +85,6 @@ def random_forest(season = '2018-2018', no_test = False, random_search = False):
     plt.savefig('charts/{}.png'.format(title.replace(' ','_').lower()), dpi=300)
     plt.show()
     
-    # " Feature Correlation "
-    
-    import seaborn as sns
-    
-    dependent_variables_a = dataset.iloc[:,4:18]
-    corrmat_a = dependent_variables_a.corr()
-    top_corr_features_a = corrmat_a.index
-    plt.figure(figsize=(13,13))
-    #plot heat map
-    g=sns.heatmap(dependent_variables_a.corr(),annot=True,cmap="RdYlGn")
-    
-    dependent_variables_b = dataset.iloc[:,18:-1]
-    corrmat_b = dependent_variables_b.corr()
-    top_corr_features_b = corrmat_b.index
-    plt.figure(figsize=(13,13))
-    #plot heat map
-    g=sns.heatmap(dependent_variables_b.corr(),annot=True,cmap="RdYlGn")
-    
     " Predicting a new result "
     
     # print('CHA x DEN', classifier.predict_proba(sc.transform([[109.9, 109.8, 0.45630000000000004, 0.3693, 0.6975, 44.1, 12.7, 5.7, 0.4852941176470588, 0.4, 1453.4539592152416, -1, 113.2, 109.9, 0.47219999999999995, 0.34249999999999997, 0.8288999999999997, 42.4, 13.2, 5.5, 0.6470588235294118, 0.8, 1622.89716558378, -2]])))
@@ -113,7 +95,7 @@ def random_forest(season = '2018-2018', no_test = False, random_search = False):
     cm = None
     acc_score = None
     
-    if not no_test:
+    if includes_test:
         y_pred = classifier.predict(X_test)
         cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
         acc_score = accuracy_score(y_test, y_pred)

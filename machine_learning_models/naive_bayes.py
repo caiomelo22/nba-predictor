@@ -14,10 +14,10 @@ import import_data_helper as idh
 # In[ ]:
 
 
-def naive_bayes(season = '2018-2018', no_test = False):
+def naive_bayes(dataset, includes_test = False):
     " Importing the dataset "
     
-    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(season, no_test)
+    dataset, X, y, X_train, X_test, y_train, y_test = idh.import_data_classification(dataset, includes_test)
     
     " Training the model on the Training set "
     
@@ -35,7 +35,7 @@ def naive_bayes(season = '2018-2018', no_test = False):
     cm = None
     acc_score = None
     
-    if not no_test:
+    if includes_test:
         y_pred = classifier.predict(X_test)
         cm = confusion_matrix(y_test.ravel(), y_pred.ravel())
         acc_score = accuracy_score(y_test, y_pred)

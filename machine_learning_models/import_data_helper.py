@@ -5,19 +5,14 @@
 
 
 import pandas as pd
-from pathlib import Path
-import os.path
 
 
 # In[ ]:
 
 
-def import_data_classification(season = '2019-2019', no_test=False):
-    " Importing the dataset "
+def import_data_classification(dataset, includes_test=False):
+    " Splitting the dataset "
     
-    my_path = os.path.abspath(Path(os.path.abspath(os.path.dirname(__file__))).parent.absolute())
-    path = my_path +  '\data\{}.csv'.format(season)
-    dataset = pd.read_csv(path)
     X = dataset.iloc[:, 5:-1].values
     y = dataset.iloc[:, -1:].values
     
@@ -29,7 +24,7 @@ def import_data_classification(season = '2019-2019', no_test=False):
     X_test = None
     y_test = None
     sc = StandardScaler()
-    if no_test:
+    if not includes_test:
         X_train = X
         y_train = y
         X_train = sc.fit_transform(X_train)
