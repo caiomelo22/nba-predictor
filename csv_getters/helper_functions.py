@@ -27,7 +27,7 @@ def get_e_team(team_elo, opp_team_elo):
 # In[ ]:
 
 
-def reset_season_elo(season_id, g, elo_dic):
+def reset_season_elo(elo_dic):
     for k, v in elo_dic.items():
         elo_dic[k] = v*0.75 + 0.25*1505
                 
@@ -76,10 +76,13 @@ def get_player_mean_per(playerLastGames):
     if len(perValues) > 0:
         return mean(perValues)
     return 0
+
+def get_season_year(season_id):
+    return int(str(season_id)[1:])
     
 def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
     gamePlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_ID'] == gameId) & (seasonAllPlayers['TEAM_ID'] == teamId)].nlargest(5, 'MIN')
-    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (seasonAllPlayers['SEASON_ID'] == seasonId) & (seasonAllPlayers['MIN'] > 0)]
+    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (get_season_year(seasonAllPlayers['SEASON_ID']) == seasonId) & (seasonAllPlayers['MIN'] > 0)]
     perValues = []
     for index, player in gamePlayers.iterrows():
         playerLastTenGames = seasonPlayers.loc[seasonPlayers['PLAYER_ID'] == player['PLAYER_ID']].iloc[-10:]
