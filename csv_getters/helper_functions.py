@@ -82,7 +82,7 @@ def get_season_year(season_id):
     
 def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
     gamePlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_ID'] == gameId) & (seasonAllPlayers['TEAM_ID'] == teamId)].nlargest(5, 'MIN')
-    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (get_season_year(seasonAllPlayers['SEASON_ID']) == seasonId) & (seasonAllPlayers['MIN'] > 0)]
+    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (seasonAllPlayers['SEASON_ID'].apply(get_season_year) == seasonId) & (seasonAllPlayers['MIN'] > 0)]
     perValues = []
     for index, player in gamePlayers.iterrows():
         playerLastTenGames = seasonPlayers.loc[seasonPlayers['PLAYER_ID'] == player['PLAYER_ID']].iloc[-10:]
