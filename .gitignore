@@ -13,6 +13,7 @@
 /models
 /data
 /charts
+/scalers
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
