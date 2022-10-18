@@ -1,31 +1,13 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 from statistics import mean
 from datetime import datetime, timedelta
 import pandas as pd
 import os.path
 
-
-# In[ ]:
-
-
 def get_k(vic_margin, elo_diff_winner):
     return 20*((vic_margin+3)**0.8)/(7.5 + 0.006*elo_diff_winner)
 
-
-# In[ ]:
-
-
 def get_e_team(team_elo, opp_team_elo):
     return 1/(1+10**((opp_team_elo - team_elo)/400))
-
-
-# In[ ]:
-
 
 def reset_season_elo(elo_dic):
     for k, v in elo_dic.items():
@@ -42,18 +24,6 @@ def update_elo(winner, elo_a, elo_b, elo_dic, team_a_id, team_b_id, team_a_pts, 
         elo_diff_winner = elo_b - elo_a
         elo_dic[team_a_id] = get_k(vic_margin, elo_diff_winner)*(0 - get_e_team(elo_a, elo_b)) + elo_a
         elo_dic[team_b_id] = get_k(vic_margin, elo_diff_winner)*(1 - get_e_team(elo_b, elo_a)) + elo_b
-        
-def team_points_conceded(previous_games, season_games):
-    previous_games_pts_conceded = []
-    for index, game in previous_games.iterrows():
-        opp_game = season_games.loc[(season_games['GAME_ID'] == game['GAME_ID']) & (season_games['TEAM_ID'] != game['TEAM_ID'])].iloc[0]
-        previous_games_pts_conceded.append(opp_game['PTS'])
-    if len(previous_games_pts_conceded) > 0:
-        return sum(previous_games_pts_conceded) / len(previous_games_pts_conceded)
-    return 0
-
-
-# In[ ]:
 
 
 def current_streak (previous_games):
@@ -71,50 +41,23 @@ def current_streak (previous_games):
 def get_player_mean_per(playerLastGames):
     perValues = []
     for index, game in playerLastGames.iterrows():
-        perValues.append((game['FGM'] * 85.910 + game['STL'] * 53.897 + game['FG3M'] * 51.757 + game['FTM'] * 46.845 + game['BLK'] * 39.190 + game['OREB'] * 39.190 + game['AST'] * 34.677 + game['DREB'] * 14.707
-                          - game['PF'] * 17.174 - (game['FTA'] - game['FTM']) * 20.091 - (game['FGA'] - game['FGM'])* 39.190 - game['TOV'] * 53.897 ) * (1 / game['MIN']))
+        perValues.append((game['fgm'] * 85.910 + game['stl'] * 53.897 + game['fg3m'] * 51.757 + game['ftm'] * 46.845 + game['blk'] * 39.190 + game['oreb'] * 39.190 + game['ast'] * 34.677 + game['dreb'] * 14.707
+                          - game['pf'] * 17.174 - (game['fta'] - game['ftm']) * 20.091 - (game['fga'] - game['fgm'])* 39.190 - game['tov'] * 53.897 ) * (1 / game['minutes']))
     if len(perValues) > 0:
         return mean(perValues)
     return 0
-
-def get_season_year(season_id):
-    return int(str(season_id)[1:])
     
 def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
-    gamePlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_ID'] == gameId) & (seasonAllPlayers['TEAM_ID'] == teamId)].nlargest(5, 'MIN')
-    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['GAME_DATE'] < gameDate) & (seasonAllPlayers['TEAM_ID'] == teamId) & (seasonAllPlayers['SEASON_ID'].apply(get_season_year) == seasonId) & (seasonAllPlayers['MIN'] > 0)]
+    gamePlayers = seasonAllPlayers.loc[(seasonAllPlayers['game_id'] == gameId) & (seasonAllPlayers['team_id'] == teamId)].nlargest(5, 'minutes')
+    seasonPlayers = seasonAllPlayers.loc[(seasonAllPlayers['date'] < gameDate) & (seasonAllPlayers['team_id'] == teamId) & (seasonAllPlayers['season'] == seasonId) & (seasonAllPlayers['minutes'] > 0)]
     perValues = []
     for index, player in gamePlayers.iterrows():
-        playerLastTenGames = seasonPlayers.loc[seasonPlayers['PLAYER_ID'] == player['PLAYER_ID']].iloc[-10:]
+        playerLastTenGames = seasonPlayers.loc[seasonPlayers['player_id'] == player['player_id']].iloc[-10:]
         perValues.append(get_player_mean_per(playerLastTenGames))
     if len(perValues) > 0:
         return mean(perValues)
     else:
         return 0
-    
-def load_bets_csv():
-    my_path = os.path.abspath(os.path.dirname(__file__))
-    path = os.path.join(my_path, '../data/odds.csv')
-    dataset = pd.read_csv(path)
-    dataset['GAME_DATE'] = pd.to_datetime(dataset['GAME_DATE']).dt.normalize()
-    return dataset
-
-
-# In[ ]:
-
-
-def get_teams_odds(team_a_id, team_b_id, game_date, season_odds):
-    try:
-        game = season_odds[(season_odds['TEAM_A_ID'] == team_a_id) & (season_odds['TEAM_B_ID'] == team_b_id) & (game_date <= season_odds['GAME_DATE']) & ((game_date + timedelta(days=2)) >= season_odds['GAME_DATE'])].iloc[0]
-        return float(game['TEAM_A_ODDS']), float(game['TEAM_B_ODDS'])
-    except IndexError:
-        return None, None
-    except ValueError:
-        return None, None
-    
-
-
-# In[ ]:
 
 
 def get_wl_pct (previous_games):
@@ -132,9 +75,7 @@ def get_wl_pct (previous_games):
         return win_pct, loss_pct
     return 0, 0
     
-def get_team_stats (previous_games, previous_games_pts_conceded, season_pct, per, odds, elo):
-    return [previous_games['PTS'].mean(), previous_games_pts_conceded, previous_games['FG_PCT'].mean(), previous_games['FG3_PCT'].mean(), 
-                        previous_games['FT_PCT'].mean(), previous_games['REB'].mean(), previous_games['TOV'].mean(),
-                        season_pct, per, odds, elo]
+def get_team_stats (previous_games, season_pct, per, elo, matchup_pct, ha_pct, streak):
+    return [previous_games['team_pts'].mean(), previous_games['opp_pts'].mean(), previous_games['team_fg_pct'].mean(), previous_games['team_fg3_pct'].mean(), previous_games['team_ft_pct'].mean(), previous_games['team_reb'].mean(), previous_games['team_tov'].mean(), season_pct, per, elo, matchup_pct, ha_pct, streak]
 
 
