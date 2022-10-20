@@ -13,7 +13,7 @@ import pandas as pd
 def import_data_classification(dataset, includes_test=False):
     " Splitting the dataset "
     
-    X = dataset.iloc[:, 5:-1].values
+    X = dataset.iloc[:, 7:-1].values
     y = dataset.iloc[:, -1:].values
     
     " Splitting the dataset into the Training set and Test set and Feature Scaling"
