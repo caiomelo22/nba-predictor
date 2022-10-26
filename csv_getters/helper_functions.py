@@ -75,7 +75,7 @@ def get_wl_pct (previous_games):
         return win_pct, loss_pct
     return 0, 0
     
-def get_team_stats (previous_games, season_pct, per, elo, matchup_pct, ha_pct, streak):
-    return [previous_games['team_pts'].mean(), previous_games['opp_pts'].mean(), previous_games['team_fg_pct'].mean(), previous_games['team_fg3_pct'].mean(), previous_games['team_ft_pct'].mean(), previous_games['team_reb'].mean(), previous_games['team_tov'].mean(), season_pct, per, elo, matchup_pct, ha_pct, streak]
+def get_team_stats (previous_games, season_pct, per, elo, matchup_pct, ha_pct, streak, pct_last_n_games, ha_pct_last_n_games):
+    return [previous_games['team_pts'].mean(), previous_games['opp_pts'].mean(), previous_games['team_fg_pct'].mean(), previous_games['team_fg3_pct'].mean(), previous_games['team_ft_pct'].mean(), previous_games['team_reb'].mean(), previous_games['team_tov'].mean(), season_pct, per, elo, matchup_pct, ha_pct, streak, pct_last_n_games, ha_pct_last_n_games]
 
 
