@@ -74,8 +74,22 @@ def get_wl_pct (previous_games):
             loss_pct = 0
         return win_pct, loss_pct
     return 0, 0
+
+def get_team_possessions(game, scenario):
+    if scenario == 'H':
+        return game['home_fga'] - game['home_oreb'] + game['home_tov'] + (0.4 * game['home_fta'])
+    else:
+        return game['away_fga'] - game['away_oreb'] + game['away_tov'] + (0.4 * game['away_fta'])
+
+def get_team_offensive_rating_game(game, scenario):
+    possessions = get_team_possessions(game, scenario)
+    return ((game['home_pts'] / possessions) * 100) if scenario == 'H' else ((game['away_pts'] / possessions) * 100)
+
+def get_team_defensive_rating_game(game, scenario):
+    possessions = get_team_possessions(game, scenario)
+    return ((game['away_pts'] / possessions) * 100) if scenario == 'H' else ((game['home_pts'] / possessions) * 100)
     
 def get_team_stats (previous_games, season_pct, per, elo, matchup_pct, ha_pct, streak, pct_last_n_games, ha_pct_last_n_games):
-    return [previous_games['team_pts'].mean(), previous_games['opp_pts'].mean(), previous_games['team_fg_pct'].mean(), previous_games['team_fg3_pct'].mean(), previous_games['team_ft_pct'].mean(), previous_games['team_reb'].mean(), previous_games['team_tov'].mean(), season_pct, per, elo, matchup_pct, ha_pct, streak, pct_last_n_games, ha_pct_last_n_games]
+    return [previous_games['team_pts'].mean(), previous_games['opp_pts'].mean(), previous_games['team_fg_pct'].mean(), previous_games['team_fg3_pct'].mean(), previous_games['team_ft_pct'].mean(), previous_games['team_reb'].mean(), previous_games['team_tov'].mean(), season_pct, per, elo, matchup_pct, ha_pct, streak, pct_last_n_games, ha_pct_last_n_games, previous_games['team_off_rtg'].mean(), previous_games['team_def_rtg'].mean()]
 
 
