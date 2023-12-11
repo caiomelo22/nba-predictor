@@ -1,4 +1,4 @@
-# NBA-Predictor
+# NBA Predictor
 Project that focus on predicting NBA matches using some machine learning models. I want to stress that this is just a study based on the past seasons and not a financial resource, by all means.
 
 ## Description
