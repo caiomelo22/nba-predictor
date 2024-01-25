@@ -23,6 +23,7 @@ def current_streak(previous_games):
 
 def get_player_mean_per(playerLastGames):
     perValues = []
+    
     for _, game in playerLastGames.iterrows():
         perValues.append(
             (
@@ -41,30 +42,35 @@ def get_player_mean_per(playerLastGames):
             )
             * (1 / game["minutes"])
         )
+        
     if len(perValues) > 0:
         return mean(perValues)
     return 0
 
 
-def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
-    gamePlayers = seasonAllPlayers.loc[
-        (seasonAllPlayers["game_id"] == gameId)
-        & (seasonAllPlayers["team_id"] == teamId)
+def get_team_per_mean(team_id, game_id, game_date, season_id, season_all_players):
+    game_players = season_all_players.loc[
+        (season_all_players["game_id"] == game_id)
+        & (season_all_players["team_id"] == team_id)
     ].nlargest(5, "minutes")
-    seasonPlayers = seasonAllPlayers.loc[
-        (seasonAllPlayers["date"] < gameDate)
-        & (seasonAllPlayers["team_id"] == teamId)
-        & (seasonAllPlayers["season"] == seasonId)
-        & (seasonAllPlayers["minutes"] > 0)
+    
+    season_players = season_all_players.loc[
+        (season_all_players["date"] < game_date)
+        & (season_all_players["team_id"] == team_id)
+        & (season_all_players["season"] == season_id)
+        & (season_all_players["minutes"] > 0)
     ]
-    perValues = []
-    for _, player in gamePlayers.iterrows():
-        playerLastTenGames = seasonPlayers.loc[
-            seasonPlayers["player_id"] == player["player_id"]
+    
+    per_values = []
+    
+    for _, player in game_players.iterrows():
+        player_last_ten_games = season_players.loc[
+            season_players["player_id"] == player["player_id"]
         ].iloc[-10:]
-        perValues.append(get_player_mean_per(playerLastTenGames))
-    if len(perValues) > 0:
-        return mean(perValues)
+        per_values.append(get_player_mean_per(player_last_ten_games))
+        
+    if len(per_values) > 0:
+        return mean(per_values)
     else:
         return 0
 
@@ -72,6 +78,7 @@ def get_team_per_mean(teamId, gameId, gameDate, seasonId, seasonAllPlayers):
 def get_wl_pct(previous_games):
     if len(previous_games.index) > 0:
         wl = previous_games["WL"].value_counts(normalize=True)
+        
         if "W" in wl and "L" in wl:
             win_pct = wl["W"]
             loss_pct = wl["L"]
@@ -81,6 +88,7 @@ def get_wl_pct(previous_games):
         elif "W" in wl and "L" not in wl:
             win_pct = wl["W"]
             loss_pct = 0
+            
         return win_pct, loss_pct
     return 0, 0
 
@@ -104,6 +112,7 @@ def get_team_possessions(game, scenario):
 
 def get_team_offensive_rating_game(game, scenario):
     possessions = get_team_possessions(game, scenario)
+    
     return (
         ((game["home_pts"] / possessions) * 100)
         if scenario == "H"
@@ -113,6 +122,7 @@ def get_team_offensive_rating_game(game, scenario):
 
 def get_team_defensive_rating_game(game, scenario):
     possessions = get_team_possessions(game, scenario)
+    
     return (
         ((game["away_pts"] / possessions) * 100)
         if scenario == "H"
