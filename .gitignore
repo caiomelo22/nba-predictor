@@ -18,6 +18,7 @@
 csv_getters/config.py
 csv_getters/teams_elo
 *.joblib
+.env
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
