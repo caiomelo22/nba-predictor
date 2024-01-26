@@ -1,4 +1,9 @@
 import pandas as pd
+from helpers.per import get_team_per_mean
+from helpers.feature_engineer import (
+    current_streak,
+    get_wl_pct,
+)
 
 
 def get_team_stats(
@@ -41,7 +46,7 @@ def get_team_previous_games(season_games, team_id, game_date, season):
         (season_games["away_id"] == team_id) & (season_games["date"] < game_date)
     ]
 
-    if len(home_previous_games.index) == 0 or len(away_previous_games.index) == 0:
+    if len(home_previous_games) == 0 or len(away_previous_games) == 0:
         return None
 
     home_previous_games.rename(
@@ -177,3 +182,93 @@ def get_team_previous_games(season_games, team_id, game_date, season):
         home_previous_season_games,
         away_previous_season_games,
     )
+
+
+def get_match_info(
+    game_info, stats_team_a, stats_team_b, winner, team_a_pts, team_b_pts
+):
+    return game_info + stats_team_a + stats_team_b + [winner, team_a_pts, team_b_pts]
+
+
+def get_game_data(
+    season_games,
+    season_games_plyrs,
+    teams_elo_dict,
+    game,
+    team_id,
+    opp_id,
+    teams_per,
+    n_last_games,
+    n_last_specific_games,
+    scenario,
+    fetch_per = True
+):
+    response = get_team_previous_games(
+        season_games, team_id, game["date"], game["season"]
+    )
+    if not response:
+        return None
+
+    (
+        _,
+        _,
+        previous_games,
+        previous_season_games,
+        home_previous_season_games,
+        away_previous_season_games,
+    ) = response
+
+    if len(previous_season_games.index) < n_last_games:
+        return None
+
+    last_n_games = previous_season_games.iloc[-n_last_games:, :]
+
+    # Get last game ELO
+    elo = teams_elo_dict[team_id]
+
+    # Last n games pct
+    pct_last_n_games = get_wl_pct(last_n_games)[0]
+
+    # Getting Previous A x B Matchups
+    last_matchups = previous_games[previous_games["opp_id"] == opp_id].iloc[-10:, :]
+
+    # Getting player information
+    if fetch_per:
+        teams_per[team_id] = get_team_per_mean(
+            team_id, game["id"], game["date"], game["season"], season_games_plyrs
+        )
+
+    # Season Win Percentage
+    season_pct = get_wl_pct(previous_season_games)[0]
+
+    # Last n/2 games pct and Season H/A Win Percentage
+    if scenario == "H":
+        ha_pct_last_n_games = get_wl_pct(
+            home_previous_season_games.iloc[-n_last_specific_games:, :]
+        )[0]
+        ha_pct = get_wl_pct(home_previous_season_games)[0]
+    else:
+        ha_pct_last_n_games = get_wl_pct(
+            away_previous_season_games.iloc[-n_last_specific_games:, :]
+        )[0]
+        ha_pct = get_wl_pct(away_previous_season_games)[0]
+
+    # Matchup Win Percentage
+    matchup_pct = get_wl_pct(last_matchups)[0]
+
+    # Calculating Current Streak
+    streak = current_streak(previous_season_games)
+
+    stats_team = get_team_stats(
+        last_n_games,
+        season_pct,
+        teams_per[team_id],
+        elo,
+        matchup_pct,
+        ha_pct,
+        streak,
+        pct_last_n_games,
+        ha_pct_last_n_games,
+    )
+
+    return stats_team

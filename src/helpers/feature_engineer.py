@@ -1,6 +1,3 @@
-from statistics import mean
-
-
 def current_streak(previous_games):
     if len(previous_games.index) > 0:
         previous_games["start_of_streak"] = previous_games.WL.ne(
@@ -17,60 +14,6 @@ def current_streak(previous_games):
             return previous_games.iloc[-1, -1]
         else:
             return -1 * previous_games.iloc[-1, -1]
-    else:
-        return 0
-
-
-def get_player_mean_per(playerLastGames):
-    perValues = []
-    
-    for _, game in playerLastGames.iterrows():
-        perValues.append(
-            (
-                game["fgm"] * 85.910
-                + game["stl"] * 53.897
-                + game["fg3m"] * 51.757
-                + game["ftm"] * 46.845
-                + game["blk"] * 39.190
-                + game["oreb"] * 39.190
-                + game["ast"] * 34.677
-                + game["dreb"] * 14.707
-                - game["pf"] * 17.174
-                - (game["fta"] - game["ftm"]) * 20.091
-                - (game["fga"] - game["fgm"]) * 39.190
-                - game["tov"] * 53.897
-            )
-            * (1 / game["minutes"])
-        )
-        
-    if len(perValues) > 0:
-        return mean(perValues)
-    return 0
-
-
-def get_team_per_mean(team_id, game_id, game_date, season_id, season_all_players):
-    game_players = season_all_players.loc[
-        (season_all_players["game_id"] == game_id)
-        & (season_all_players["team_id"] == team_id)
-    ].nlargest(5, "minutes")
-    
-    season_players = season_all_players.loc[
-        (season_all_players["date"] < game_date)
-        & (season_all_players["team_id"] == team_id)
-        & (season_all_players["season"] == season_id)
-        & (season_all_players["minutes"] > 0)
-    ]
-    
-    per_values = []
-    
-    for _, player in game_players.iterrows():
-        player_last_ten_games = season_players.loc[
-            season_players["player_id"] == player["player_id"]
-        ].iloc[-10:]
-        per_values.append(get_player_mean_per(player_last_ten_games))
-        
-    if len(per_values) > 0:
-        return mean(per_values)
     else:
         return 0
 

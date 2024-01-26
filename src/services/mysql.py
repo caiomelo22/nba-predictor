@@ -35,3 +35,15 @@ class MySQLService:
         except Exception as e:
             print(e)
         return resp
+    
+    def execute_multiple_queries(self, queries):
+        try:
+            db = self.connect_to_db()
+            mycursor = db.cursor()
+            for query in queries:
+                mycursor.execute(query)
+
+            db.commit()
+            db.close()
+        except Exception as e:
+            print(e)
