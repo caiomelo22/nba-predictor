@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime, timedelta
 from helpers.per import get_team_per_mean
 from helpers.feature_engineer import (
     current_streak,
@@ -16,6 +17,7 @@ def get_team_stats(
     streak,
     pct_last_n_games,
     ha_pct_last_n_games,
+    is_b2b
 ):
     return [
         previous_games["team_pts"].mean(),
@@ -35,6 +37,7 @@ def get_team_stats(
         ha_pct_last_n_games,
         previous_games["team_off_rtg"].mean(),
         previous_games["team_def_rtg"].mean(),
+        is_b2b
     ]
 
 
@@ -240,6 +243,9 @@ def get_game_data(
 
     # Season Win Percentage
     season_pct = get_wl_pct(previous_season_games)[0]
+    
+    day_before = game["date"] - timedelta(days=1)
+    is_b2b = len(previous_season_games[previous_season_games["date"] >= day_before]) > 0
 
     # Last n/2 games pct and Season H/A Win Percentage
     if scenario == "H":
@@ -269,6 +275,7 @@ def get_game_data(
         streak,
         pct_last_n_games,
         ha_pct_last_n_games,
+        is_b2b
     )
 
     return stats_team
