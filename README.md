@@ -1,16 +1,20 @@
 # NBA Predictor
-Project that focus on predicting NBA matches using some machine learning models. I want to stress that this is just a study based on the past seasons and not a financial resource, by all means.
+This project focuses on predicting NBA matches using various machine learning models. It's important to note that this is purely a study based on past seasons and is not intended as a financial resource.
 
 ## Description
-The purpose of this project is to collect data and develop machine learning models that can predict the outcome of NBA matches. With our predictions made, we apply them to the betting market, simulating what would happen if we used this predictions for financial purposes.
+The project is divided in three parts:
+- Generating a CSV file with statistics from previous games/seasons. This is done in [data.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/data.ipynb) by fetching data from your database and aggregating information for use in machine learning models. If you'd like to explore the project that gathers the data used in this one, check out [NBA Data](https://github.com/caiomelo22/nba-data).
+- Testing models and simulating how the predictions made would perform against the moneyline market odds. This is done in [moneyline.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/moneyline.ipynb) and utilizes data generated in the previous notebook. In this notebook, you can also save the best-performing models for use in our final notebook.
+- The final notebook scrapes and predicts today's NBA games using the models generated in the previous notebook. This is done in [predictor.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/predictor.ipynb).
 
-In this project, we cover the following tasks:
-  - Data scrapping from the Odds Portal website in order to collect the odds for NBA matches. Once the necessary data is extracted, a csv containing this information is generated so the process of web scrapping is only needed once.
-  - Collect data from the NBA API, generating a csv file that represents a window of the given seasons. This csv contains both raw and artificial data made from the api information.
-  - Development of a few machine learning models that predict the outcome of NBA matches. The models are trained with the data from the csv created in the last topic.
-  - Test of the developed models, displaying the accuracy of each one.
-  - Application of the predictions on the betting market, simultating the profit made from each model.
-  - Display of how much was invested on each model, the profit and margin of profit.
-  - Display of charts that represent the distribution of the missed/hit bets by odd and host.
-  - Display of a chart that represents the money made from each team in the league.
-  - Display of a chart that represents the progression of money invested over a given window of seasons.
+## Setup
+To fetch data from your MySQL database, you need to set the following variables in your environment:
+```
+HOST=localhost
+DATABASE=nba-db
+USER=user
+PASSWORD=pwd
+```
+
+## Disclaimer
+Once again, this project was created for research purposes and should not be considered a means to profit from the sports betting market.
