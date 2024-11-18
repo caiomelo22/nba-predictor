@@ -1,11 +1,61 @@
 import pandas as pd
+from tqdm import tqdm
 from datetime import datetime, timedelta
+from helpers.elo import reset_season_elo, update_elo
 from helpers.per import get_team_per_mean
 from helpers.feature_engineer import (
     current_streak,
     get_wl_pct,
 )
+from services.mysql import MySQLService
 
+def initialize_elo_dict(matches):
+    teams = set(
+        matches["home_id"].unique().tolist()
+    )
+    teams_elo = {team: 1500 for team in teams}
+    return teams_elo
+
+def initialize_matches(start_season):
+    mysql_service = MySQLService()
+
+    order_by_clause = "date ASC"
+    games_df = mysql_service.get_data("games", order_by_clause=order_by_clause)
+
+    games_df["date"] = pd.to_datetime(games_df["date"])
+    games_df = games_df.dropna(subset=["home_pts", "away_pts"]).reset_index(drop=True)
+
+    games_df["home_elo"] = 1500
+    games_df["away_elo"] = 1500
+
+    games_df["home_odds"] = games_df["home_odds"].astype(float)
+    games_df["away_odds"] = games_df["away_odds"].astype(float)
+
+    teams_elo = initialize_elo_dict(games_df)
+
+    print("Generating teams ELOs...")
+
+    for index in tqdm(range(len(games_df))):
+        if index > 0 and games_df.iloc[index - 1]["season"] != games_df.iloc[index]["season"]:
+            reset_season_elo(teams_elo)
+        
+        row = games_df.iloc[index]
+
+        games_df.at[index, "home_elo"] = teams_elo[row["home_id"]]
+        games_df.at[index, "away_elo"] = teams_elo[row["away_id"]]
+
+        update_elo(
+            row["winner"],
+            teams_elo,
+            row["home_id"],
+            row["away_id"],
+            row["home_pts"],
+            row["away_pts"],
+        )
+
+    print("Successfully generated teams ELOs.")
+
+    return games_df[games_df["season"] >= start_season], teams_elo
 
 def get_team_stats(
     previous_games,
