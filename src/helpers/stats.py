@@ -5,6 +5,8 @@ from helpers.elo import reset_season_elo, update_elo
 from helpers.per import get_team_per_mean
 from helpers.feature_engineer import (
     current_streak,
+    get_team_defensive_rating_game,
+    get_team_offensive_rating_game,
     get_wl_pct,
 )
 from services.mysql import MySQLService
@@ -17,10 +19,14 @@ def initialize_elo_dict(matches):
     return teams_elo
 
 def initialize_matches(start_season):
-    mysql_service = MySQLService()
+    mysql = MySQLService()
 
     order_by_clause = "date ASC"
-    games_df = mysql_service.get_data("games", order_by_clause=order_by_clause)
+    games_df = mysql.get_data("games", order_by_clause=order_by_clause)
+
+    teams_df = mysql.get_data("teams")
+
+    season_games_plyrs = mysql.execute_query(f"SELECT g.id as game_id, g.date, g.season, g.is_playoff, g.winner, g.home_id, g.away_id, pg.team_id, pg.player_id, pg.minutes, pg.pts, pg.fgm, pg.fga, pg.fg_pct, pg.fg3m, pg.fg3a, pg.fg3_pct, pg.ftm, pg.fta, pg.ft_pct, pg.oreb, pg.dreb, pg.reb, pg.ast, pg.stl, pg.blk, pg.tov, pg.pf, pg.plus_minus FROM player_games AS pg LEFT JOIN games as g on pg.game_id = g.id WHERE g.season >= {start_season} ORDER BY g.date ASC")
 
     games_df["date"] = pd.to_datetime(games_df["date"])
     games_df = games_df.dropna(subset=["home_pts", "away_pts"]).reset_index(drop=True)
@@ -28,6 +34,12 @@ def initialize_matches(start_season):
     games_df["home_elo"] = 1500
     games_df["away_elo"] = 1500
 
+    games_df['home_off_rtg'] = games_df.apply(lambda row: get_team_offensive_rating_game(row, 'H'), axis = 1)
+    games_df['home_def_rtg'] = games_df.apply(lambda row: get_team_defensive_rating_game(row, 'H'), axis = 1)
+
+    games_df['away_off_rtg'] = games_df.apply(lambda row: get_team_offensive_rating_game(row, 'A'), axis = 1)
+    games_df['away_def_rtg'] = games_df.apply(lambda row: get_team_defensive_rating_game(row, 'A'), axis = 1)
+    
     games_df["home_odds"] = games_df["home_odds"].astype(float)
     games_df["away_odds"] = games_df["away_odds"].astype(float)
 
@@ -55,7 +67,12 @@ def initialize_matches(start_season):
 
     print("Successfully generated teams ELOs.")
 
-    return games_df[games_df["season"] >= start_season], teams_elo
+    return (
+        games_df[games_df["season"] >= start_season].reset_index(drop=True),
+        season_games_plyrs,
+        teams_df,
+        teams_elo
+    )
 
 def get_team_stats(
     previous_games,
