@@ -14,7 +14,7 @@
 /data
 /charts
 /scalers
-/results
+/dist
 csv_getters/config.py
 csv_getters/teams_elo
 *.joblib
