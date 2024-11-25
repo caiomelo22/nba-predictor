@@ -15,7 +15,7 @@ from sklearn.ensemble import (
 )
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -35,7 +35,7 @@ def get_models(random_state, voting_classifier_models=["logistic_regression"]) -
             "score": None,
         },
         "knn": {
-            "estimator": KNeighborsClassifier(n_neighbors=40),
+            "estimator": KNeighborsClassifier(),
             "params": None,
             "score": None,
         },
@@ -49,14 +49,33 @@ def get_models(random_state, voting_classifier_models=["logistic_regression"]) -
             "params": None,
             "score": None,
         },
+        "sgd": {
+            "estimator": SGDClassifier(random_state=random_state, loss='log_loss'),
+            "params": None,
+            "score": None,
+        },
         "random_forest_default": {
             "estimator": RandomForestClassifier(random_state=random_state),
             "params": None,
             "score": None,
         },
-        "random_forest": {
+        "random_forest_500": {
+            "estimator": RandomForestClassifier(
+                random_state=random_state, n_estimators=500
+            ),
+            "params": None,
+            "score": None,
+        },
+        "random_forest_750": {
             "estimator": RandomForestClassifier(
                 random_state=random_state, n_estimators=750
+            ),
+            "params": None,
+            "score": None,
+        },
+        "random_forest_1000": {
+            "estimator": RandomForestClassifier(
+                random_state=random_state, n_estimators=1000
             ),
             "params": None,
             "score": None,
