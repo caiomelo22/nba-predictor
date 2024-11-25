@@ -9,6 +9,12 @@ def save_file(directory, file, file_name):
 
     dump(file, f"{directory}/{file_name}.joblib")
 
+def load_df_from_file(path, file_name):
+    file_path = f"{path}/{file_name}.csv"
+    if os.path.exists(file_path):
+        return pd.read_csv(file_path)
+    else:
+        return None
 
 def parse_df_to_csv(dataframe, columns, path, filename):
     if not os.path.exists(path):
