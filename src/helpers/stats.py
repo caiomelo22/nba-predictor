@@ -48,8 +48,8 @@ def initialize_matches(start_season):
     print("Generating teams ELOs...")
 
     for index in tqdm(range(len(games_df))):
-        if index > 0 and games_df.iloc[index - 1]["season"] != games_df.iloc[index]["season"]:
-            reset_season_elo(teams_elo)
+        # if index > 0 and games_df.iloc[index - 1]["season"] != games_df.iloc[index]["season"]:
+        #     reset_season_elo(teams_elo)
         
         row = games_df.iloc[index]
 
