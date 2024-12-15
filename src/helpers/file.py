@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from joblib import dump
+from joblib import dump, load
 
 
 def save_file(directory, file, file_name):
@@ -8,6 +8,9 @@ def save_file(directory, file, file_name):
         os.makedirs(directory)
 
     dump(file, f"{directory}/{file_name}.joblib")
+
+def load_from_file(path, file_name):
+    return load(f"{path}/{file_name}.joblib")
 
 def load_df_from_file(path, file_name):
     file_path = f"{path}/{file_name}.csv"
