@@ -102,7 +102,7 @@ def build_next_games_df(lineup, team, opp_team, season_games_plyrs, stats_column
                         )
                     )
                 )
-            ].iloc[-1]
+            ].sort_values("minutes").iloc[-1]
             
             last_ten_games = season_games_plyrs.loc[
                 (season_games_plyrs["minutes"] > 0) &
