@@ -3,9 +3,10 @@ This project focuses on predicting NBA matches using various machine learning mo
 
 ## Description
 The project is divided in three parts:
-- Generating a CSV file with statistics from previous games/seasons. This is done in [data.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/data.ipynb) by fetching data from your database and aggregating information for use in machine learning models. If you'd like to explore the project that gathers the data used in this one, check out [NBA Data](https://github.com/caiomelo22/nba-data).
-- Testing models and simulating how the predictions made would perform against the moneyline market odds. This is done in [simulator.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/simulator.ipynb) and utilizes data generated in the previous notebook. In this notebook, you can also save the best-performing models for use in our final notebook.
-- The final notebook scrapes and predicts today's NBA games using the models generated in the previous notebook. This is done in [predictor.ipynb](https://github.com/caiomelo22/nba-predictor/blob/master/src/predictor.ipynb).
+- [Classifiation Simulator](https://github.com/caiomelo22/nba-predictor/blob/master/src/classification_simulator.ipynb) --> This notebook was made for you to test your classification machine learning models and simulate how they would perform in previous seasons. In this notebook you can configure settings such as models features, minimum odds, bankroll and much more. After testing and simulating, you can save your pipeline to make current predictions.
+- [Classification Predictor](https://github.com/caiomelo22/nba-predictor/blob/master/src/classification_predictor.ipynb) --> This notebook scrapes and predicts today's NBA games using the pipelines generated in the previous notebook.
+- [Regression Simulator](https://github.com/caiomelo22/nba-predictor/blob/master/src/regression_simulator.ipynb) --> This notebook was made for you to test your regression machine learning models and simulate how they would perform in previous seasons. After testing and simulating, you can save your pipeline to make current predictions.
+- [Regression Predictor](https://github.com/caiomelo22/nba-predictor/blob/master/src/regression_predictor.ipynb) --> This notebook scrapes and predicts today's NBA games using the pipelines generated in the previous notebook.
 
 ## Setup
 To fetch data from your MySQL database, you need to set the following variables in your environment:
